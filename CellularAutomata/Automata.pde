@@ -9,9 +9,7 @@ class Automata
   int[]     ruleBorn = {0, 0, 0, 0, 0, 0, 0, 0, 0};
   int[]     ruleStasis = {0, 0, 0, 0, 0, 0, 0, 0, 0};
   
-  color     colorBorn;
-  color     colorStasis;
-  color     colorDeath;
+  color     colorBorn, colorStasis, colorDeath;
   
   Automata(int cellSize_, String rule_, color colorBorn_, color colorStasis_, color colorDeath_)
   {
@@ -26,33 +24,23 @@ class Automata
     colorDeath = colorDeath_;
     return ;
   }
-
+  
   /*
-  ** if (abs(i - columns / 2.f + 0.5f) + abs(j - rows / 2.f + 0.5f) > Generation + 4)
-  **   if (random(1.f) < 0.75f - (float)sqrt(pow(i - columns / 2.f + 0.5f, 2.f) + pow(j - rows / 2.f + 0.5f, 2.f)) / (columns / 1.5f))
+  ** Cellar Automata initialization functions
   */
-
-  void  init(boolean isRandom, float randomness)
+  
+  void  SetRuleState(String str, int[] rule)
   {
-    PVector  position;
-    
-    setRule(rule);
-    for (int i = 0; i < rows; i++)
-      for (int j = 0; j < columns; j++)
-      {
-        position = new PVector((float)j * cellSize, (float)i * cellSize);
-        cells[i][j] = new Cell(position, (float)cellSize, colorBorn, colorStasis, colorDeath);
-        if (isRandom)
-        {
-          if (random(1.f) < randomness)
-            cells[i][j].setState(1);
-        }
-        else if (getNeumannDist(j, i) < 2 && (columns / 2 - 1 <= j && j <= columns / 2))
-          cells[i][j].setState(1);
-        else if (i % (rows - 1) == 0 && (j < 1 || columns - 2 < j))
-          cells[i][j].setState(1);
-      }
-    return ;
+      if (str.equals("0"))       rule[0] = 1;  
+      else if (str.equals("1"))  rule[1] = 1;
+      else if (str.equals("2"))  rule[2] = 1;
+      else if (str.equals("3"))  rule[3] = 1;
+      else if (str.equals("4"))  rule[4] = 1;
+      else if (str.equals("5"))  rule[5] = 1;
+      else if (str.equals("6"))  rule[6] = 1;
+      else if (str.equals("7"))  rule[7] = 1;
+      else if (str.equals("8"))  rule[8] = 1;
+      return ;
   }
 
   void  setRule(String str)
@@ -76,35 +64,32 @@ class Automata
     return ;
   }
 
-  void  SetRuleState(String str, int[] rule)
+  void  init(boolean isRandom, float randomness)
   {
-      if (str.equals("0"))       rule[0] = 1;  
-      else if (str.equals("1"))  rule[1] = 1;
-      else if (str.equals("2"))  rule[2] = 1;
-      else if (str.equals("3"))  rule[3] = 1;
-      else if (str.equals("4"))  rule[4] = 1;
-      else if (str.equals("5"))  rule[5] = 1;
-      else if (str.equals("6"))  rule[6] = 1;
-      else if (str.equals("7"))  rule[7] = 1;
-      else if (str.equals("8"))  rule[8] = 1;
-      return ;
+    PVector  position;
+    
+    setRule(rule);
+    for (int i = 0; i < rows; i++)
+      for (int j = 0; j < columns; j++)
+      {
+        position = new PVector((float)j * cellSize, (float)i * cellSize);
+        cells[i][j] = new Cell(position, (float)cellSize, colorBorn, colorStasis, colorDeath);
+        if (isRandom)
+        {
+          if (random(1.f) < randomness)
+            cells[i][j].state = 1;
+        }
+        else if ((rows / 2 - 1 <= i && i <= rows / 2) && (columns / 2 - 1 <= j && j <= columns / 2))
+          cells[i][j].state = 1;
+        else if (i % (rows - 1) == 0 && (j < 1 || columns - 2 < j))
+          cells[i][j].state = 1;
+      }
+    return ;
   }
 
-  float  getNeumannDist(int x, int y)
-  {
-    float    distance;
-    
-    distance = abs(x - columns / 2.f - offset.x) + abs(y - rows / 2.f + offset.y);
-    return (distance);
-  }
-  
-  float  getDist(int x, int y)
-  {
-    float distance;
-    
-    distance = sqrt(pow(x - columns / 2.f + offset.x, 2.f) + pow(y - rows / 2.f + offset.y, 2.f));
-    return (distance);
-  }
+  /*
+  ** Cellar Automata update functions
+  */
 
   int   getNeighbors(int x, int y)
   {
@@ -117,55 +102,94 @@ class Automata
     neighbors -= cells[y][x].prevState;
     return (neighbors);
   }
-
-  int   getStateFromRule(int state, int neighbors)
+  
+  String  getBinaryState(int x, int y)
   {
-    if ((state == 0) && (ruleBorn[neighbors] == 1))
-      return(1);
-    else if ((state == 1) && (ruleStasis[neighbors] == 0))
-      return(0);
-    return(state);
-  }
-
-  int  getBinaryState(int x, int y)
-  {
-    String  binaryResult;
+    String  binaryState;
     
-    binaryResult = "";
-    if (cells[y][x].state == 1)
-    {
-      if (cells[(y - 1 + rows) % rows][(x + columns) % columns].state == 1)  binaryResult = "1";
-      else binaryResult = "0";
-      if (cells[(y + rows) % rows][(x - 1 + columns) % columns].state == 1)  binaryResult += "1";
-      else binaryResult += "0";
-      if (cells[(y + 1 + rows) % rows][(x + columns) % columns].state == 1)  binaryResult += "1";
-      else binaryResult += "0";
-      if (cells[(y + rows) % rows][(x + 1 + columns) % columns].state == 1)  binaryResult += "1";
-      else binaryResult += "0";
-      return (unbinary(binaryResult));
-    }
-    return (cells[y][x].binaryState);
+    binaryState = "";
+    if (cells[(y - 1 + rows) % rows][(x + columns) % columns].isActive() == 1)  binaryState = "1";
+    else binaryState = "0";
+    if (cells[(y + rows) % rows][(x - 1 + columns) % columns].isActive() == 1)  binaryState += "1";
+    else binaryState += "0";
+    if (cells[(y + 1 + rows) % rows][(x + columns) % columns].isActive() == 1)  binaryState += "1";
+    else binaryState += "0";
+    if (cells[(y + rows) % rows][(x + 1 + columns) % columns].isActive() == 1)  binaryState += "1";
+    else binaryState += "0";
+    return (binaryState);
   }
   
-  void  update()
+  void  updateCellsState()
   {
     int  neighbors;
-    int  state;
     
-    state = 0;
     for (int i = 0; i < rows; i++)
       for (int j = 0; j < columns; j++)
-        cells[i][j].savePreviousState();
+        cells[i][j].prevState = cells[i][j].state;
     for (int i = 0; i < rows; i++)
       for (int j = 0; j < columns; j++)
       {
         neighbors = getNeighbors(j, i);
-        state = getStateFromRule(cells[i][j].state, neighbors);
-        cells[i][j].setState(state);
+        if (cells[i][j].state == 0 && ruleBorn[neighbors] == 1)
+          cells[i][j].state = 1;
+        else if (cells[i][j].state == 1 && ruleStasis[neighbors] == 0)
+          cells[i][j].state = 0;
       }
     for (int i = 0; i < rows; i++)
       for (int j = 0; j < columns; j++)
-        cells[i][j].setBinaryState(getBinaryState(j, i));
+        cells[i][j].binaryState = getBinaryState(j, i);
+  }
+  
+  void  updateBothCellsOrientation(Cell[][] cellsIn)
+  {
+    PVector orientation;
+    
+    for (int i = 0; i < rows; i++)
+      for (int j = 0; j < columns; j++)
+      {
+        orientation = cells[i][j].getOrientationFromBinaryState();
+        orientation.lerp(cellsIn[i][j].getOrientationFromBinaryState(), 0.5f);
+        if (orientation.magSq() > 0.001f)
+          orientation.normalize();
+        cells[i][j].orientation = orientation;
+        cellsIn[i][j].orientation = orientation;
+      }
+    return;
+  }
+  
+  void  mergeCellsOrientation(Cell[][] cellsIn)
+  {
+    for (int i = 0; i < rows; i++)
+      for (int j = 0; j < columns; j++)
+      {
+        cells[i][j].orientation.lerp(cellsIn[i][j].orientation, 0.5f);
+      }
+    return;
+  }
+  
+  void  updateCellsShape()
+  {
+    PVector vec, vecZero;
+    
+    vec = new PVector(0.f, 0.f);
+    vecZero = new PVector(0.f, 0.f);
+    for (int i = 0; i < rows; i++)
+      for (int j = 0; j < columns; j++)
+        cells[i][j].resetShape();
+    for (int i = 0; i < rows - 1; i++)
+      for (int j = 0; j < columns - 1; j++)
+      {
+        vec = new PVector(0.f, 0.f);
+        for (int k = 0; k <= 1; k++)
+          for (int l = 0; l <= 1; l++)
+            vec.add(cells[i + k][j + l].orientation);
+        vec.div(4.f);
+        vec.mult(-cellSize);
+        cells[i][j].morphShape(vecZero.copy(), vecZero.copy(), vec.copy(), vecZero.copy());
+        cells[i][j + 1].morphShape(vecZero.copy(), vecZero.copy(), vecZero.copy(), vec.copy());
+        cells[i + 1][j + 1].morphShape(vec.copy(), vecZero.copy(), vecZero.copy(), vecZero.copy());
+        cells[i + 1][j].morphShape(vecZero.copy(), vec.copy(), vecZero.copy(), vecZero.copy());
+      }
     return ;
   }
   
@@ -174,6 +198,20 @@ class Automata
   **   && abs(i - columns / 2.f + 0.5f) + abs(j - rows / 2.f + 0.5f) <= Generation + 4  && Generation < 24)
   */
 
+  void  displayBoth(Cell[][] cellsIn)
+  {
+    for (int i = 0; i < rows; i++)
+      for (int j = 0; j < columns; j++)
+      {
+        if (cellsIn[i][j].prevState == 0 && cellsIn[i][j].state == 0)
+          cells[i][j].display();
+        else
+          cellsIn[i][j].display();
+        //cells[i][j].displayDebug();
+      }
+    return ;
+  }
+  
   void  display()
   {
     for (int i = 0; i < rows; i++)
