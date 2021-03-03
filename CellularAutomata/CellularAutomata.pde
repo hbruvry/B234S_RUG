@@ -27,8 +27,8 @@ void  init()
 void  setup()
 {
   size(1280, 720);
-  CARug = new Automata(5, "B234/S", color(4, 12, 140), color(160, 168, 208), color(80, 88, 160));
-  CALife = new Automata(5, "B37/S23", color(240, 96, 4), color(240, 128, 4), color(240, 128, 4));
+  CARug = new Automata(10, "B234/S", color(4, 12, 140), color(160, 168, 208), color(80, 88, 160));
+  CALife = new Automata(10, "B37/S23", color(240, 96, 4), color(240, 128, 4), color(240, 128, 4));
   init();
   return ;
 }
