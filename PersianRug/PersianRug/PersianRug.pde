@@ -3,12 +3,12 @@ ReactionDiffusion  RD;
 
 void  setup()
 {
-  size(1920, 1080, P3D);
-  CA = new CellularAutomata(30, "B234/S", 1440, 720);
-  for (int i = 0; i < 128; i++)
+  size(1280, 720);
+  CA = new CellularAutomata(30, "B234/S", 1080, 540);
+  for (int i = 0; i < 24; i++)
     CA.update();
   RD = new ReactionDiffusion(5, CA);
-  for (int i = 0; i < 1024; i++)
+  for (int i = 0; i < 512; i++)
   {
    RD.update();
    RD.swap();

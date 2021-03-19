@@ -99,7 +99,7 @@ class  CellularAutomata
   {
     noStroke();
     pushMatrix();
-    translate((width - cellsWidth) / 2, (height - cellsHeight) / 2, 0);
+    translate((width - cellsWidth) / 2, (height - cellsHeight) / 2);
     for (int i = 0; i < rows; i++)
       for (int j = 0; j < columns; j++)
       {

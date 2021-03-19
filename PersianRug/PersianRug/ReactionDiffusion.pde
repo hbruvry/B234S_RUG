@@ -40,7 +40,7 @@ class  ReactionDiffusion
         state = 0.f;
         if ((offsetY - cellSize < i * cellSize && i * cellSize < height - offsetY)
             && (offsetX < j * cellSize && j * cellSize < width - offsetX))
-          if (ca.cells[k][l].state == 1.f || ca.cells[k][l].statePrev == 0.f)
+          if (ca.cells[k][l].state == 0.f && ca.cells[k][l].statePrev == 0.f)
             state = 1.f;
         cellsPrev[i][j] = new RDCell(1.f, state);
         cells[i][j] = new RDCell(1.f, state);
