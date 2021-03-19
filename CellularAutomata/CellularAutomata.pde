@@ -3,7 +3,6 @@ import processing.svg.*;
 // A fork of John Conway's Game of Life CA by Daniel Shiffman. 
 
 Automata  CARug;
-Automata  CAMove;
 Automata  CALife;
 int       Generation = 0;
 
@@ -21,22 +20,23 @@ void  init()
 {
   CARug.init(false, 0.f);
   CALife.init(true, 0.125f);
+  Generation = 0;
   return ;
 }
 
 void  setup()
 {
-  size(1280, 720);
-  CARug = new Automata(10, "B234/S", color(4, 12, 140), color(160, 168, 208), color(80, 88, 160));
-  CALife = new Automata(10, "B37/S23", color(240, 96, 4), color(240, 128, 4), color(240, 128, 4));
+  size(1440, 720);
+  CARug = new Automata(60, "B234/S", color(192), color(255), color(128));
+  CALife = new Automata(60, "B37/S23", color(240, 96, 4), color(240, 128, 4), color(240, 128, 4));
   init();
   return ;
 }
 
 void  draw()
 { 
+  background(255);
   surface.setTitle("Generation = " + Generation);
-  background(167, 169, 217);
   CARug.displayBoth(CALife.cells);
   return ;
 }
@@ -47,9 +47,7 @@ void keyPressed()
   {
     CARug.updateCellsState();
     CALife.updateCellsState();
-    CARug.updateBothCellsOrientation(CALife.cells);
-    CARug.updateCellsShape();
-    CALife.updateCellsShape();
+    CARug.updateCells(CALife.cells);
     Generation++;
   }
   else if (key == 's')

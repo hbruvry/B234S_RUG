@@ -2,7 +2,6 @@ class Automata
 {
   int       cellSize;
   int       columns, rows;
-  PVector   offset;
   Cell[][]  cells;
   
   String    rule;
@@ -16,7 +15,6 @@ class Automata
     cellSize = cellSize_;
     columns = width / cellSize;
     rows = height / cellSize;
-    offset = new PVector(-1.f - columns % 2.f, 1 - rows % 2.f).div(2.f);
     cells = new Cell[rows][columns];
     rule = rule_;
     colorBorn = colorBorn_;
@@ -31,15 +29,9 @@ class Automata
   
   void  SetRuleState(String str, int[] rule)
   {
-      if (str.equals("0"))       rule[0] = 1;  
-      else if (str.equals("1"))  rule[1] = 1;
-      else if (str.equals("2"))  rule[2] = 1;
-      else if (str.equals("3"))  rule[3] = 1;
-      else if (str.equals("4"))  rule[4] = 1;
-      else if (str.equals("5"))  rule[5] = 1;
-      else if (str.equals("6"))  rule[6] = 1;
-      else if (str.equals("7"))  rule[7] = 1;
-      else if (str.equals("8"))  rule[8] = 1;
+      for (int i = 0; i < 9; i++)
+        if (str.equals(str(i)))
+          rule[i] = 1;
       return ;
   }
 
@@ -140,57 +132,33 @@ class Automata
         cells[i][j].binaryState = getBinaryState(j, i);
   }
   
-  void  updateBothCellsOrientation(Cell[][] cellsIn)
+  void  updateCells(Cell[][] cellsIn)
   {
-    PVector orientation;
+    float   scale = 0.f;
+    PVector direction;
     
     for (int i = 0; i < rows; i++)
       for (int j = 0; j < columns; j++)
       {
-        orientation = cells[i][j].getOrientationFromBinaryState();
-        orientation.lerp(cellsIn[i][j].getOrientationFromBinaryState(), 0.5f);
-        if (orientation.magSq() > 0.001f)
-          orientation.normalize();
-        cells[i][j].orientation = orientation;
-        cellsIn[i][j].orientation = orientation;
+        scale = 0.f;
+        direction = cells[i][j].getDirectionFromBinaryState();
+        direction.lerp(cellsIn[i][j].getDirectionFromBinaryState(), 0.5f);
+        if (direction.magSq() > 0.001f)
+          direction.normalize();
+        cells[i][j].direction = direction;
+        cellsIn[i][j].direction = direction;
+        if (direction.x > 0.f)
+          scale = cellSize / 2.f / direction.x;
+        else if (direction.x < 0.f)
+          scale = -cellSize / 2.f / direction.x;
+        if (abs(direction.y * scale) > cellSize / 2.f && direction.y > 0.f)
+          scale = cellSize / 2.f / direction.y;
+        else if (abs(direction.y * scale) > cellSize / 2.f && direction.y < 0.f)
+          scale = -cellSize / 2.f / direction.y;
+        cells[i][j].tangent = direction.copy().mult(scale);
+        cellsIn[i][j].tangent = direction.copy().mult(scale);
       }
     return;
-  }
-  
-  void  mergeCellsOrientation(Cell[][] cellsIn)
-  {
-    for (int i = 0; i < rows; i++)
-      for (int j = 0; j < columns; j++)
-      {
-        cells[i][j].orientation.lerp(cellsIn[i][j].orientation, 0.5f);
-      }
-    return;
-  }
-  
-  void  updateCellsShape()
-  {
-    PVector vec, vecZero;
-    
-    vec = new PVector(0.f, 0.f);
-    vecZero = new PVector(0.f, 0.f);
-    for (int i = 0; i < rows; i++)
-      for (int j = 0; j < columns; j++)
-        cells[i][j].resetShape();
-    for (int i = 0; i < rows - 1; i++)
-      for (int j = 0; j < columns - 1; j++)
-      {
-        vec = new PVector(0.f, 0.f);
-        for (int k = 0; k <= 1; k++)
-          for (int l = 0; l <= 1; l++)
-            vec.add(cells[i + k][j + l].orientation);
-        vec.div(4.f);
-        vec.mult(-cellSize);
-        cells[i][j].morphShape(vecZero.copy(), vecZero.copy(), vec.copy(), vecZero.copy());
-        cells[i][j + 1].morphShape(vecZero.copy(), vecZero.copy(), vecZero.copy(), vec.copy());
-        cells[i + 1][j + 1].morphShape(vec.copy(), vecZero.copy(), vecZero.copy(), vecZero.copy());
-        cells[i + 1][j].morphShape(vecZero.copy(), vec.copy(), vecZero.copy(), vecZero.copy());
-      }
-    return ;
   }
   
   /*
@@ -202,17 +170,15 @@ class Automata
   {
     for (int i = 0; i < rows; i++)
       for (int j = 0; j < columns; j++)
-      {
         if (cellsIn[i][j].prevState == 0 && cellsIn[i][j].state == 0)
           cells[i][j].display();
-        else
+    for (int i = 0; i < rows; i++)
+      for (int j = 0; j < columns; j++)
           cellsIn[i][j].display();
-        //cells[i][j].displayDebug();
-      }
     return ;
   }
   
-  void  display()
+  void  display(Cell[][] cellsIn, boolean isLife)
   {
     for (int i = 0; i < rows; i++)
       for (int j = 0; j < columns; j++)
