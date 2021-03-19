@@ -1,17 +1,20 @@
 class  CellularAutomata
 {
   int         cellSize;
+  int         cellsWidth, cellsHeight;
   int         columns, rows;
   CACell[][]  cells;
   
   int[]       ruleBorn = {0, 0, 0, 0, 0, 0, 0, 0, 0};
   int[]       ruleStasis = {0, 0, 0, 0, 0, 0, 0, 0, 0};
   
-  CellularAutomata(int cellSize_, String rule)
+  CellularAutomata(int cellSize_, String rule, int cellsWidth_, int cellsHeight_)
   {
     cellSize = cellSize_;
-    columns = width / cellSize;
-    rows = height / cellSize;
+    cellsWidth = cellsWidth_;
+    cellsHeight = cellsHeight_;
+    columns = cellsWidth / cellSize;
+    rows = cellsHeight / cellSize;
     cells = new CACell[rows][columns];
     init();
     setRule(rule);
@@ -26,7 +29,7 @@ class  CellularAutomata
         cells[i][j] = new CACell();
         if ((rows / 2 - 1 <= i && i <= rows / 2) && (columns / 2 - 1 <= j && j <= columns / 2))
           cells[i][j].state = 1;
-        else if (i % (rows - 1) == 0 && (j < 1 || columns - 2 < j))
+        else if (i % (rows - 1) == 0 && (j == 0 || columns - 1 == j))
           cells[i][j].state = 1;
       }
     return ;
@@ -89,6 +92,24 @@ class  CellularAutomata
       else if (cells[i][j].state == 1 && ruleStasis[neighbors] == 0)
         cells[i][j].state = 0;
     }
+    return ;
+  }
+  
+  void  display()
+  {
+    noStroke();
+    pushMatrix();
+    translate((width - cellsWidth) / 2, (height - cellsHeight) / 2, 0);
+    for (int i = 0; i < rows; i++)
+      for (int j = 0; j < columns; j++)
+      {
+        if (cells[i][j].statePrev == 1)
+        {
+          fill(0, 0, 255);
+          rect (j * cellSize, i * cellSize, cellSize, cellSize);
+        }
+      }
+    popMatrix();
     return ;
   }
 }

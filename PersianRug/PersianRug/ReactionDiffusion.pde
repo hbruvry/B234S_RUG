@@ -1,27 +1,49 @@
 class  ReactionDiffusion
 {
+  int         cellSize;
+  int         columns, rows;
   RDCell[][]  cellsPrev;
   RDCell[][]  cells;
-  float  dA = 0.2097f;
-  float  dB = 0.1050f;
-  float  feed = 0.098f;
-  float  k = 0.0555f;
+  float  diffusionA = 0.2097f;
+  float  diffusionB = 0.1050f;
+  float  feed = 0.0290f;
+  float  kill = 0.0570f;
   
-  ReactionDiffusion(CACell[][] cellsIn, int cellSize)
+  ReactionDiffusion(int cellSize_, CellularAutomata ca)
   {
-    cellsPrev = new RDCell[height][width];
-    cells = new RDCell[height][width];
-    init(cellsIn, cellSize);
+    cellSize = cellSize_;
+    columns = width / cellSize;
+    rows = height / cellSize;
+    println(columns);
+    println(rows);
+    cellsPrev = new RDCell[rows][columns];
+    cells = new RDCell[rows][columns];
+    init(ca);
     return ;
   }
   
-  void  init(CACell[][] cellsIn, int cellSize)
+  void  init(CellularAutomata ca)
   {
-    for (int i = 0; i < height; i++)
-      for (int j = 0; j < width; j++)
+    int    k, l;
+    float  offsetX, offsetY;
+    float  state;
+    
+    offsetX = (width - ca.columns * ca.cellSize) / 2.f;
+    offsetY = (height - ca.rows * ca.cellSize) / 2.f;
+    println(offsetX);
+    println(offsetY);
+    for (int i = 0; i < rows; i++)
+      for (int j = 0; j < columns; j++)
       {
-        cellsPrev[i][j] = new RDCell(1.f, (float)cellsIn[i / cellSize][j / cellSize].state);
-        cells[i][j] = new RDCell(1.f, (float)cellsIn[i / cellSize][j / cellSize].state);
+        k = (int)((i * cellSize - offsetY) / ca.cellSize);
+        l = (int)((j * cellSize - offsetX) / ca.cellSize);
+        state = 0.f;
+        if ((offsetY - cellSize < i * cellSize && i * cellSize < height - offsetY)
+            && (offsetX < j * cellSize && j * cellSize < width - offsetX))
+          if (ca.cells[k][l].state == 1.f || ca.cells[k][l].statePrev == 0.f)
+            state = 1.f;
+        cellsPrev[i][j] = new RDCell(1.f, state);
+        cells[i][j] = new RDCell(1.f, state);
       }
     return ;
   }
@@ -72,30 +94,31 @@ class  ReactionDiffusion
   {
     float  a, b;
     
-    for (int i = 1; i < height - 1; i++)
-      for (int j = 1; j < width - 1; j++)
+    for (int i = 1; i < rows - 1; i++)
+      for (int j = 1; j < columns - 1; j++)
       {
         a = cellsPrev[i][j].a;
         b = cellsPrev[i][j].b;
-        cells[i][j].a = a + dA * laplaceA(i, j) - a * b * b + feed * (1.f - a);
-        cells[i][j].b = b + dB * laplaceB(i, j) + a * b * b - (k + feed) * b;
+        cells[i][j].a = a + diffusionA * laplaceA(i, j) - a * b * b + feed * (1.f - a);
+        cells[i][j].b = b + diffusionB * laplaceB(i, j) + a * b * b - (kill + feed) * b;
         cells[i][j].a = constrain(cells[i][j].a, 0.f, 1.f);
         cells[i][j].b = constrain(cells[i][j].b, 0.f, 1.f);
       }
     return ;
   }
   
-  void  draw()
+  void  display()
   {
-    RDCell  cell;
+    float  intensity;
     
-    loadPixels();
-    for (int i = 1; i < height - 1; i++)
-      for (int j = 1; j < width - 1; j++)
+    for (int i = 1; i < rows - 1; i++)
+      for (int j = 1; j < columns - 1; j++)
       {
-        cell = cells[i][j];
-        pixels[i * width + j] = color((cell.a - cell.b) * 255);
+        intensity = cells[i][j].a - cells[i][j].b;
+        noStroke();
+        fill(255, 0, 0);
+        if (intensity < 0.5f)
+          rect(j * cellSize, i * cellSize, cellSize, cellSize);
       }
-    updatePixels();
   }
 }
