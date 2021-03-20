@@ -3,13 +3,13 @@ ReactionDiffusion  RD;
 MarchingSquare     MS;
 boolean            isStarted = true;
 int                iteration = 0;
-int                iterationStart = 20;
+int                iterationStart = 32;
 
 void  init()
 {
   PVector caSize;
 
-  caSize = new PVector(1440.f, 720.f);
+  caSize = new PVector(1920.f, 960.f);
   CARug = new CellularAutomata(30, caSize, "B234/S", color(192), color(1, 0), color(128), color(1, 0));
   RD = new ReactionDiffusion(2, color(255)); 
   MS = new MarchingSquare(2, color(255, 0, 0));
@@ -24,7 +24,7 @@ void  init()
 
 void  setup()
 { 
-  size(1440, 720);
+  size(1920, 960);
   init();
   return ;
 }
@@ -39,7 +39,7 @@ void  draw()
    RD.swap();
   }
   CARug.display();
-  //CALife.display();
+//  RD.display();
   MS.update(RD);
   MS.display();
   return ;

@@ -16,6 +16,8 @@ class  ReactionDiffusion
   int        columns, rows;
   RDCell[][] cellsPrev;
   RDCell[][] cells;
+  PVector    caOffset;
+  float      caCellSize;
   
   float      diffusionA = 1.f;
   float      diffusionB = 0.5f;
@@ -25,12 +27,14 @@ class  ReactionDiffusion
   
   ReactionDiffusion(int cellSize_, color colorRD_)
   {
-    cellSize =  cellSize_;
-    columns =   width / cellSize;
-    rows =      height / cellSize;
-    cellsPrev = new RDCell[rows][columns];
-    cells =     new RDCell[rows][columns];
-    colorRD =   colorRD_;
+    cellSize =   cellSize_;
+    columns =    width / cellSize;
+    rows =       height / cellSize;
+    cellsPrev =  new RDCell[rows][columns];
+    cells =      new RDCell[rows][columns];
+    colorRD =    colorRD_;
+    caOffset =   new PVector(0.f, 0.f);
+    caCellSize = 1.f;
     init();
     return ;
   }
@@ -48,21 +52,21 @@ class  ReactionDiffusion
   
   void  updateFromCA(CellularAutomata ca)
   {
-    float  offsetX, offsetY;
     float  state;
     
-    offsetX = (width - ca.columns * ca.cellSize) / 2.f;
-    offsetY = (height - ca.rows * ca.cellSize) / 2.f;
+    caCellSize = ca.cellSize;
+    caOffset.x = (width - ca.columns * caCellSize) / 2.f;
+    caOffset.y = (height - ca.rows * caCellSize) / 2.f;
     for (int i = 0; i < rows; i++)
       for (int j = 0, k = 0, l = 0; j < columns; j++)
       {
         state = 0.f;
-        k = (int)((i * cellSize - offsetY) / ca.cellSize);
-        l = (int)((j * cellSize - offsetX) / ca.cellSize);
-        if ((offsetY <= i * cellSize && i * cellSize < height - offsetY)
-            && (offsetX <= j * cellSize && j * cellSize < width - offsetX))
+        k = (int)((i * cellSize - caOffset.y) / caCellSize);
+        l = (int)((j * cellSize - caOffset.x) / caCellSize);
+        if ((caOffset.y <= i * cellSize && i * cellSize < height - caOffset.y)
+            && (caOffset.x <= j * cellSize && j * cellSize < width - caOffset.x))
         {
-          if (ca.cells[k][l].isActive() == 1)
+          if (ca.cells[k][l].state == 1)
             state = 1.f;
         }
         cellsPrev[i][j] = new RDCell(1.f, state);
@@ -116,10 +120,17 @@ class  ReactionDiffusion
   void  update()
   {
     float  a, b;
+    float  k, l;
     
     for (int i = 1; i < rows - 1; i++)
       for (int j = 1; j < columns - 1; j++)
       {
+        k = (float)(i * cellSize - caOffset.y) / caCellSize;
+        l = (float)(j * cellSize - caOffset.x) / caCellSize;
+        k = constrain(k / ((height - caOffset.y * 2.f) / caCellSize), 0.f, 1.f);
+        l = constrain(l / ((width - caOffset.x * 2.f) / caCellSize), 0.f, 1.f);
+        feed = map(pow((float)k, 1.f), 0.f, 1.f, 0.01f, 0.1f);
+        kill = map(pow((float)l, 0.5f), 0.f, 1.f, 0.045f, 0.07f);
         a = cellsPrev[i][j].a;
         b = cellsPrev[i][j].b;
         cells[i][j].a = a + diffusionA * laplaceA(i, j) - a * b * b + feed * (1.f - a);
