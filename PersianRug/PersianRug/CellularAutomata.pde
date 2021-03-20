@@ -103,9 +103,9 @@ class  CellularAutomata
     for (int i = 0; i < rows; i++)
       for (int j = 0; j < columns; j++)
       {
-        if (cells[i][j].statePrev == 1)
+        if (cells[i][j].state == 1)
         {
-          fill(0, 0, 255);
+          fill(255, 0, 0);
           rect (j * cellSize, i * cellSize, cellSize, cellSize);
         }
       }

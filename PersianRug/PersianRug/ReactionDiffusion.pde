@@ -4,10 +4,10 @@ class  ReactionDiffusion
   int         columns, rows;
   RDCell[][]  cellsPrev;
   RDCell[][]  cells;
-  float  diffusionA = 0.2097f;
-  float  diffusionB = 0.1050f;
-  float  feed = 0.0290f;
-  float  kill = 0.0570f;
+  float  diffusionA = 1.f;
+  float  diffusionB = 0.5f;
+  float  feed = 0.055f;
+  float  kill = 0.062f;
   
   ReactionDiffusion(int cellSize_, CellularAutomata ca)
   {
@@ -40,7 +40,7 @@ class  ReactionDiffusion
         state = 0.f;
         if ((offsetY - cellSize < i * cellSize && i * cellSize < height - offsetY)
             && (offsetX < j * cellSize && j * cellSize < width - offsetX))
-          if (ca.cells[k][l].state == 0.f && ca.cells[k][l].statePrev == 0.f)
+          if (ca.cells[k][l].statePrev == 1.f && ca.cells[k][l].state == 0.f)
             state = 1.f;
         cellsPrev[i][j] = new RDCell(1.f, state);
         cells[i][j] = new RDCell(1.f, state);
@@ -116,7 +116,7 @@ class  ReactionDiffusion
       {
         intensity = cells[i][j].a - cells[i][j].b;
         noStroke();
-        fill(255, 0, 0);
+        fill(0, 0, 255);
         if (intensity < 0.5f)
           rect(j * cellSize, i * cellSize, cellSize, cellSize);
       }

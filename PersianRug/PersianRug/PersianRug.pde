@@ -1,29 +1,30 @@
 CellularAutomata   CA;
 ReactionDiffusion  RD;
+MarchingSquare     MS;
 
 void  setup()
 {
   size(1280, 720);
   CA = new CellularAutomata(30, "B234/S", 1080, 540);
-  for (int i = 0; i < 24; i++)
+  for (int i = 0; i < 40; i++)
     CA.update();
-  RD = new ReactionDiffusion(5, CA);
-  for (int i = 0; i < 512; i++)
-  {
-   RD.update();
-   RD.swap();
-  }
+  RD = new ReactionDiffusion(2, CA);
+  MS = new MarchingSquare(2);
   return ;
 }
 
 void  draw()
 {
-  background(192);
   surface.setTitle("PresianRug - " + (int)frameRate + "fps");
-  RD.display();
+  background(192);
+  for (int i = 0; i < 4; i++)
+  {
+   RD.update();
+   RD.swap();
+  }
   CA.display();
-  stroke(0, 0, 255);
-  line(0, height / 2, width, height / 2);
-  line(width / 2, 0, width / 2, height);
+  RD.display();
+  MS.update(RD);
+  MS.display();
   return ;
 }
