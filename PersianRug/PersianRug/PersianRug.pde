@@ -1,30 +1,30 @@
-CellularAutomata   CA, CAFront;
+CellularAutomata   CARug, CALife;
 ReactionDiffusion  RD;
 MarchingSquare     MS;
 boolean            isStarted = true;
 int                iteration = 0;
-int                iterationStart = 26;
+int                iterationStart = 20;
 
 void  init()
 {
   PVector caSize;
 
-  caSize = new PVector(1080.f, 540.f);
-  CA = new CellularAutomata(30, caSize, "B234/S", color(192), color(0), color(128), color(255, 128, 0));
+  caSize = new PVector(1440.f, 720.f);
+  CARug = new CellularAutomata(30, caSize, "B234/S", color(192), color(1, 0), color(128), color(1, 0));
   RD = new ReactionDiffusion(2, color(255)); 
   MS = new MarchingSquare(2, color(255, 0, 0));
-  while (iteration < 26)
+  while (iteration < iterationStart)
   {
-    CA.update();
+    CARug.update();
     iteration++;
   }
-  RD.updateFromCA(CA);
+  RD.updateFromCA(CARug);
   return ;
 }
 
 void  setup()
 { 
-  size(1280, 720);
+  size(1440, 720);
   init();
   return ;
 }
@@ -38,7 +38,8 @@ void  draw()
    RD.update();
    RD.swap();
   }
-  CA.display();
+  CARug.display();
+  //CALife.display();
   MS.update(RD);
   MS.display();
   return ;
@@ -48,8 +49,8 @@ void keyPressed()
 {
   if (key == ' ')
   {
-    CA.update();
-    RD.updateFromCA(CA);
+    CARug.update();
+    RD.updateFromCA(CARug);
     iteration++;
   }
   else if (key == ENTER)
