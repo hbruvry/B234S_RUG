@@ -21,8 +21,8 @@ class  ReactionDiffusion
   
   float      diffusionA = 1.f;
   float      diffusionB = 0.5f;
-  float      feed = 0.055f;
-  float      kill = 0.062f;
+  float      feed = 0.062f;
+  float      kill = 0.061f;
   color      colorRD;
   
   ReactionDiffusion(int cellSize_, color colorRD_)
@@ -129,8 +129,8 @@ class  ReactionDiffusion
         l = (float)(j * cellSize - caOffset.x) / caCellSize;
         k = constrain(k / ((height - caOffset.y * 2.f) / caCellSize), 0.f, 1.f);
         l = constrain(l / ((width - caOffset.x * 2.f) / caCellSize), 0.f, 1.f);
-        feed = map(pow((float)k, 1.f), 0.f, 1.f, 0.01f, 0.1f);
-        kill = map(pow((float)l, 0.5f), 0.f, 1.f, 0.045f, 0.07f);
+        feed = map(l, 0.f, 1.f,  0.082f, 0.062f);
+        kill = map(k, 0.f, 1.f, 0.059f, 0.0609f);
         a = cellsPrev[i][j].a;
         b = cellsPrev[i][j].b;
         cells[i][j].a = a + diffusionA * laplaceA(i, j) - a * b * b + feed * (1.f - a);
@@ -151,7 +151,7 @@ class  ReactionDiffusion
       for (int j = 1; j < columns - 1; j++)
       {
         intensity = cells[i][j].a - cells[i][j].b;
-        if (intensity < 0.5f)
+        if (intensity > 0.5f)
           rect(j * cellSize, i * cellSize, cellSize, cellSize);
       }
     return ;
