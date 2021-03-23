@@ -47,7 +47,7 @@ void  draw()
   if (isRecorded)
     beginRecord(SVG, "frame-####.svg");
   CARug.display();
-  MS.update(RD); //<>//
+  MS.update(RD);
   MS.display();
   if (isRecorded)
   {
