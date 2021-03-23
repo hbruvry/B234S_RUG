@@ -21,8 +21,8 @@ class  ReactionDiffusion
   
   float      diffusionA = 1.f;
   float      diffusionB = 0.5f;
-  float      feed = 0.062f;
-  float      kill = 0.061f;
+  float      feed = 0.055f;
+  float      kill = 0.062f;
   color      colorRD;
   
   ReactionDiffusion(int cellSize_, color colorRD_)
@@ -66,7 +66,7 @@ class  ReactionDiffusion
         if ((caOffset.y <= i * cellSize && i * cellSize < height - caOffset.y)
             && (caOffset.x <= j * cellSize && j * cellSize < width - caOffset.x))
         {
-          if (ca.cells[k][l].state == 1)
+          if (ca.cells[k][l].state == 1 && new PVector(j * cellSize + cellSize / 2.f, i * cellSize + cellSize / 2.f).dist(new PVector(l * caCellSize + caCellSize / 2.f + caOffset.x, k * caCellSize + caCellSize / 2.f + caOffset.y)) < 1)
             state = 1.f;
         }
         cellsPrev[i][j] = new RDCell(1.f, state);
@@ -129,8 +129,8 @@ class  ReactionDiffusion
         l = (float)(j * cellSize - caOffset.x) / caCellSize;
         k = constrain(k / ((height - caOffset.y * 2.f) / caCellSize), 0.f, 1.f);
         l = constrain(l / ((width - caOffset.x * 2.f) / caCellSize), 0.f, 1.f);
-        feed = map(l, 0.f, 1.f,  0.082f, 0.062f);
-        kill = map(k, 0.f, 1.f, 0.059f, 0.0609f);
+        feed = map(l, 0.f, 1.f, 0.025f, 0.015f);
+        kill = map(k, 0.f, 1.f, 0.050f, 0.055f);
         a = cellsPrev[i][j].a;
         b = cellsPrev[i][j].b;
         cells[i][j].a = a + diffusionA * laplaceA(i, j) - a * b * b + feed * (1.f - a);
@@ -151,7 +151,7 @@ class  ReactionDiffusion
       for (int j = 1; j < columns - 1; j++)
       {
         intensity = cells[i][j].a - cells[i][j].b;
-        if (intensity > 0.5f)
+        if (intensity < 0.5f)
           rect(j * cellSize, i * cellSize, cellSize, cellSize);
       }
     return ;
