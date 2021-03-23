@@ -129,8 +129,8 @@ class  ReactionDiffusion
         l = (float)(j * cellSize - caOffset.x) / caCellSize;
         k = constrain(k / ((height - caOffset.y * 2.f) / caCellSize), 0.f, 1.f);
         l = constrain(l / ((width - caOffset.x * 2.f) / caCellSize), 0.f, 1.f);
-        feed = map(l, 0.f, 1.f,  0.082f, 0.062f);
-        kill = map(k, 0.f, 1.f, 0.059f, 0.0609f);
+        feed = map(l, 0.f, 1.f,  0.024f, 0.020f);
+        kill = map(k, 0.f, 1.f, 0.052f, 0.056f);
         a = cellsPrev[i][j].a;
         b = cellsPrev[i][j].b;
         cells[i][j].a = a + diffusionA * laplaceA(i, j) - a * b * b + feed * (1.f - a);

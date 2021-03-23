@@ -17,9 +17,12 @@ class  MarchingSquare
   
   void  update(ReactionDiffusion rd)
   {
+    float  ratio;
+    
+    ratio = (float)resolution / rd.cellSize;
     for (int i = 0; i < rows; i++)
       for (int j = 0; j < columns; j++)
-        field[i][j] = rd.cells[i][j].b - rd.cells[i][j].a;
+        field[i][j] = rd.cells[(int)(i * ratio)][(int)(j * ratio)].b - rd.cells[(int)(i * ratio)][(int)(j * ratio)].a;
     return ;
   }
   

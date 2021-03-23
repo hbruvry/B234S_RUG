@@ -10,9 +10,9 @@ void  init()
   PVector caSize;
 
   caSize = new PVector(1080.f, 540.f);
-  CARug = new CellularAutomata(15, caSize, "B234/S", color(192), color(1, 0), color(128), color(1, 0));
+  CARug = new CellularAutomata(15, caSize, "B234/S", color(240, 160, 0), color(1, 0), color(204, 128, 0), color(1, 0));
   RD = new ReactionDiffusion(1, color(255)); 
-  MS = new MarchingSquare(1, color(255, 0, 0));
+  MS = new MarchingSquare(5, color(16));
   while (iteration < iterationStart)
   {
     CARug.update();
@@ -32,14 +32,13 @@ void  setup()
 void  draw()
 {
   surface.setTitle("PresianRug - " + (int)frameRate + "fps");
-  background(0);
+  background(240);
   for (int i = 0; i < 4; i++)
   {
-   RD.update();
-   RD.swap();
+    RD.update();
+    RD.swap();
   }
   CARug.display();
-//  RD.display();
   MS.update(RD);
   MS.display();
   return ;
