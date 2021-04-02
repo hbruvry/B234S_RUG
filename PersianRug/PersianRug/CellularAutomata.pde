@@ -58,7 +58,8 @@ class  CellularAutomata
           if (random(0.f, 1.f) < 0.125f)
             cells[i][j].state = 1;
         }
-        else if ((rows / 2 - 1 <= i && i <= rows / 2) && (columns / 2 - 1 <= j && j <= columns / 2))
+        else if ((rows / 2 - 1 <= i && i <= rows / 2)
+                && (columns / 2 - 1 <= j && j <= columns / 2))
           cells[i][j].state = 1;
         else if (i % (rows - 1) == 0 && (j == 0 || columns - 1 == j))
           cells[i][j].state = 1;
@@ -108,14 +109,10 @@ class  CellularAutomata
     i = y + rows;
     j = x + columns;
     binaryState = "";
-    if (cells[(i - 1) % rows][j % columns].isActive() == 1)  binaryState = "1";
-    else binaryState = "0";
-    if (cells[i % rows][(j - 1) % columns].isActive() == 1)  binaryState += "1";
-    else binaryState += "0";
-    if (cells[(i + 1) % rows][j % columns].isActive() == 1)  binaryState += "1";
-    else binaryState += "0";
-    if (cells[i % rows][(j + 1) % columns].isActive() == 1)  binaryState += "1";
-    else binaryState += "0";
+    binaryState = (cells[(i - 1) % rows][j % columns].isActive() == 1) ? "1" : "0";
+    binaryState = (cells[i % rows][(j - 1) % columns].isActive() == 1) ? "1" : "0";
+    binaryState = (cells[(i + 1) % rows][j % columns].isActive() == 1) ? "1" : "0";
+    binaryState = (cells[i % rows][(j + 1) % columns].isActive() == 1) ? "1" : "0";
     return (binaryState);
   }
   
