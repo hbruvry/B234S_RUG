@@ -32,6 +32,7 @@
 
 			let	rdCells, rdCellsPrev;
 			let	rdMesh;
+			let rdStates = [ 'Negative bubbles', 'Positive bubbles', 'Precritical bubbles', 'Worms & loops', 'Stable solutions', 'U-Skate World', 'Worms', 'Worms to maze', 'Negatons', 'Turing patterns', 'Chaos to Turing', 'Fingerprints', 'Chaos & negatons', 'Spots & worms', 'Replicating spots', 'Resonant mazes', 'Mazes', 'Mazes & chaos', 'Chaos' ]; 
 			let rdColumns, rdRows;
 			let rdOffset;
 			let rdColor;
@@ -47,8 +48,12 @@
 				caColorDeath: '#cb95ae',
 				caColorEmpty: '#ccbdc8',
 				rdCellSize: 3,
-				rdDiffusionA: 1.0,
-				rdDiffusionB: 0.5,
+				rdPresetA: "Precritical bubbles",
+				rdPresetB: "U-Skate World",
+				rdDiffusionAA: 1.0,
+				rdDiffusionAB: 1.0,
+				rdDiffusionBA: 0.5,
+				rdDiffusionBB: 0.5,
 				rdFeedA: 0.025,
 				rdFeedB: 0.015,
 				rdKillA: 0.050,
@@ -124,6 +129,7 @@
 			{	
 				let a, b, abb;
 				let feed, kill;
+				let diffusionA, diffusionB;
 
 				rdCellsPrev = [];
 				for ( let i = 0; i < rdCells.length; i++ )
@@ -140,8 +146,10 @@
 						abb = a * b * b;
 						feed = THREE.MathUtils.lerp( params.rdFeedA, params.rdFeedB, i / rdRows );
 						kill = THREE.MathUtils.lerp( params.rdKillA, params.rdKillB, j / rdColumns );
-						rdCells[i][j][0] = a + params.rdDiffusionA * laplaceA( i, j ) - abb + feed * ( 1. - a );
-						rdCells[i][j][1] = b + params.rdDiffusionB * laplaceB( i, j ) + abb - ( kill + feed ) * b;
+						diffusionA = THREE.MathUtils.lerp( params.rdDiffusionAA, params.rdDiffusionAB, i / rdRows );
+						diffusionB = THREE.MathUtils.lerp( params.rdDiffusionBA, params.rdDiffusionBB, j / rdColumns );
+						rdCells[i][j][0] = a + diffusionA * laplaceA( i, j ) - abb + feed * ( 1. - a );
+						rdCells[i][j][1] = b + diffusionB * laplaceB( i, j ) + abb - ( kill + feed ) * b;
 						rdCells[i][j][0] = THREE.MathUtils.clamp( rdCells[i][j][0], 0., 1. );
 						rdCells[i][j][1] = THREE.MathUtils.clamp( rdCells[i][j][1], 0., 1. );
 					}
@@ -204,9 +212,67 @@
 				return ;
 			}
 
+			function setRDParamsA( diffusionA, diffusionB, feed, kill )
+			{
+				params.rdDiffusionAA = diffusionA;
+				params.rdDiffusionBA = diffusionB;
+				params.rdFeedA = feed;
+				params.rdKillA = kill;
+				return ;
+			}
+
+			function setRDParamsB( diffusionA, diffusionB, feed, kill )
+			{
+				params.rdDiffusionAB = diffusionA;
+				params.rdDiffusionBB = diffusionB;
+				params.rdFeedB = feed;
+				params.rdKillB = kill;
+				return ;
+			}
+
 			function setRD()
 			{
 				setRDCells();
+				
+				if ( params.rdPresetA === 'Negative bubbles') setRDParamsA( 0.2097, 0.1050, 0.0980, 0.0555 );
+				else if ( params.rdPresetA === 'Positive bubbles' )		setRDParamsA( 0.2097, 0.1050, 0.0980, 0.0570 );
+				else if ( params.rdPresetA === 'Precritical bubbles' )	setRDParamsA( 0.2097, 0.1050, 0.0820, 0.0590 );
+				else if ( params.rdPresetA === 'Worms & loops' )		setRDParamsA( 0.2097, 0.1050, 0.0820, 0.0600 );
+				else if ( params.rdPresetA === 'Stable solutions' )		setRDParamsA( 0.2097, 0.1050, 0.0740, 0.0640 );
+				else if ( params.rdPresetA === 'U-Skate World' )		setRDParamsA( 0.2097, 0.1050, 0.0620, 0.0609 );
+				else if ( params.rdPresetA === 'Worms' )				setRDParamsA( 0.2097, 0.1050, 0.0580, 0.0650 );
+				else if ( params.rdPresetA === 'Worms to maze' )		setRDParamsA( 0.2097, 0.1050, 0.0460, 0.0630 );
+				else if ( params.rdPresetA === 'Negatons' )				setRDParamsA( 0.2097, 0.1050, 0.0460, 0.0594 );
+				else if ( params.rdPresetA === 'Turing patterns' )		setRDParamsA( 0.2097, 0.1050, 0.0420, 0.0590 );
+				else if ( params.rdPresetA === 'Chaos to Turing' )		setRDParamsA( 0.2097, 0.1050, 0.0390, 0.0580 );
+				else if ( params.rdPresetA === 'Fingerprints' )			setRDParamsA( 0.2097, 0.1050, 0.0370, 0.0600 );
+				else if ( params.rdPresetA === 'Chaos & negatons' )		setRDParamsA( 0.2097, 0.1050, 0.0353, 0.0566 );
+				else if ( params.rdPresetA === 'Spots & worms' )		setRDParamsA( 0.2097, 0.1050, 0.0340, 0.0618 );
+				else if ( params.rdPresetA === 'Replicating spots' )	setRDParamsA( 0.2097, 0.1050, 0.0300, 0.0630 );
+				else if ( params.rdPresetA === 'Resonant mazes' )		setRDParamsA( 0.2097, 0.1050, 0.0300, 0.0565 );
+				else if ( params.rdPresetA === 'Mazes' )				setRDParamsA( 0.2097, 0.1050, 0.0290, 0.0570 );
+				else if ( params.rdPresetA === 'Mazes & chaos' )		setRDParamsA( 0.2097, 0.1050, 0.0260, 0.0550 );
+				else if ( params.rdPresetA === 'Chaos' )				setRDParamsA( 0.2097, 0.1050, 0.0260, 0.0510 );
+				if ( params.rdPresetB === 'Negative bubbles') setRDParamsB( 0.2097, 0.1050, 0.0980, 0.0555 );
+				else if ( params.rdPresetB === 'Positive bubbles' )		setRDParamsB( 0.2097, 0.1050, 0.0980, 0.0570 );
+				else if ( params.rdPresetB === 'Precritical bubbles' )	setRDParamsB( 0.2097, 0.1050, 0.0820, 0.0590 );
+				else if ( params.rdPresetB === 'Worms & loops' )		setRDParamsB( 0.2097, 0.1050, 0.0820, 0.0600 );
+				else if ( params.rdPresetB === 'Stable solutions' )		setRDParamsB( 0.2097, 0.1050, 0.0740, 0.0640 );
+				else if ( params.rdPresetB === 'U-Skate World' )		setRDParamsB( 0.2097, 0.1050, 0.0620, 0.0609 );
+				else if ( params.rdPresetB === 'Worms' )				setRDParamsB( 0.2097, 0.1050, 0.0580, 0.0650 );
+				else if ( params.rdPresetB === 'Worms to maze' )		setRDParamsB( 0.2097, 0.1050, 0.0460, 0.0630 );
+				else if ( params.rdPresetB === 'Negatons' )				setRDParamsB( 0.2097, 0.1050, 0.0460, 0.0594 );
+				else if ( params.rdPresetB === 'Turing patterns' )		setRDParamsB( 0.2097, 0.1050, 0.0420, 0.0590 );
+				else if ( params.rdPresetB === 'Chaos to Turing' )		setRDParamsB( 0.2097, 0.1050, 0.0390, 0.0580 );
+				else if ( params.rdPresetB === 'Fingerprints' )			setRDParamsB( 0.2097, 0.1050, 0.0370, 0.0600 );
+				else if ( params.rdPresetB === 'Chaos & negatons' )		setRDParamsB( 0.2097, 0.1050, 0.0353, 0.0566 );
+				else if ( params.rdPresetB === 'Spots & worms' )		setRDParamsB( 0.2097, 0.1050, 0.0340, 0.0618 );
+				else if ( params.rdPresetB === 'Replicating spots' )	setRDParamsB( 0.2097, 0.1050, 0.0300, 0.0630 );
+				else if ( params.rdPresetB === 'Resonant mazes' )		setRDParamsB( 0.2097, 0.1050, 0.0300, 0.0565 );
+				else if ( params.rdPresetB === 'Mazes' )				setRDParamsB( 0.2097, 0.1050, 0.0290, 0.0570 );
+				else if ( params.rdPresetB === 'Mazes & chaos' )		setRDParamsB( 0.2097, 0.1050, 0.0260, 0.0550 );
+				else if ( params.rdPresetB === 'Chaos' )				setRDParamsB( 0.2097, 0.1050, 0.0260, 0.0510 );
+				
 				updateRDCellsFromCA();
 				return ;
 			}
@@ -375,13 +441,15 @@
 				folderCA.addColor( params, 'caColorStasis' ).name( 'colorStasis' ).listen().onChange( function () { updateCACells() } );
 				folderCA.addColor( params, 'caColorDeath' ).name( 'colorDeath' ).listen().onChange( function () { updateCACells() } );
 				folderRD = gui.addFolder( 'Reaction diffusion' );
-				folderRD.add( params, 'rdCellSize', 1, 10, 1 ).name( 'cellSize' ).listen().onChange( function () { updateRD() } );
+				folderRD.add( params, 'rdCellSize', 1, 8, 1 ).name( 'cellSize' ).listen().onChange( function () { updateRD() } );
+				folderRD.add( params, 'rdPresetA', rdStates ).name( 'presetIn' ).onChange( function () { updateRD() } );
+				folderRD.add( params, 'rdPresetB', rdStates ).name( 'presetOut' ).onChange( function () { updateRD() } );
 				// folderRD.add( params, 'rdDiffusionA', 0., 1., 0.1 ).name( 'diffusionA' ).listen().onChange( function () { updateRD() } );
 				// folderRD.add( params, 'rdDiffusionB', 0., 1., 0.1 ).name( 'diffusionB' ).listen().onChange( function () { updateRD() } );
-				folderRD.add( params, 'rdFeedA', 0., 0.1, 0.001 ).name( 'feedA' ).listen().onChange( function () { updateRD() } );
-				folderRD.add( params, 'rdFeedB', 0., 0.1, 0.001 ).name( 'feedB' ).listen().onChange( function () { updateRD() } );
-				folderRD.add( params, 'rdKillA', 0., 0.1, 0.001 ).name( 'killA' ).listen().onChange( function () { updateRD() } );
-				folderRD.add( params, 'rdKillB', 0., 0.1, 0.001 ).name( 'killB' ).listen().onChange( function () { updateRD() } );
+				// folderRD.add( params, 'rdFeedA', 0., 0.1, 0.001 ).name( 'feedA' ).listen().onChange( function () { updateRD() } );
+				// folderRD.add( params, 'rdFeedB', 0., 0.1, 0.001 ).name( 'feedB' ).listen().onChange( function () { updateRD() } );
+				// folderRD.add( params, 'rdKillA', 0., 0.1, 0.001 ).name( 'killA' ).listen().onChange( function () { updateRD() } );
+				// folderRD.add( params, 'rdKillB', 0., 0.1, 0.001 ).name( 'killB' ).listen().onChange( function () { updateRD() } );
 				folderRD.add( params, 'rdIteration', 0, 240, 1 ).name( 'iteration' ).listen().onChange( function () { updateRD() } );
 				folderRD.addColor( params, 'rdColor' ).name( 'color' ).listen().onChange( function () { updateRD() } );
 				svgExport = { add:function(){ exportToSVG(); } };
