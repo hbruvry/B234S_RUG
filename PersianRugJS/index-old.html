@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title></title>
+	
+	<script src="https://threejs.org/build/three.min.js"></script>
+	<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+	<script src="https://threejs.org/examples/js/renderers/SVGRenderer.js"></script>
+	<script src="https://threejs.org/examples/js/renderers/Projector.js"></script>
+
+</head>
+<body>
+
+<input id="btnSVGExport" type="button" value="Get as SVG" onclick="btnSVGExportClick()" style="margin-bottom:3px">
+
+<script>
+		
+		var controls;		
+        var camera, scene, renderer;
+        var geometry, material, mesh;
+
+        init();
+		animate();
+		
+        function init() {
+
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10);
+            camera.position.x = 2;
+			camera.position.y = 1;
+			camera.position.z = 3;
+			camera.zoom = 3.6;
+			camera.updateProjectionMatrix();
+			
+            scene = new THREE.Scene();
+
+            geometry = new THREE.BoxGeometry(0.4, 0.2, 0.2);
+            material = new THREE.MeshNormalMaterial();
+			
+            mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+			
+            renderer = new THREE.WebGLRenderer({ antialias: true , preserveDrawingBuffer: true });
+            renderer.setSize(window.innerWidth, window.innerHeight-70);			
+						
+			controls = new THREE.OrbitControls( camera, renderer.domElement );
+			controls.update();
+			
+			document.body.appendChild(renderer.domElement);					
+		}		
+		
+		function animate() {
+            requestAnimationFrame(animate);			
+            renderer.render(scene, camera);
+        }
+		
+		function btnSVGExportClick(){
+			var rendererSVG = new THREE.SVGRenderer();
+			rendererSVG.setSize(window.innerWidth, window.innerHeight);			
+			rendererSVG.render( scene, camera );		
+			ExportToSVG(rendererSVG, "test.svg");
+		}
+			
+		function ExportToSVG(rendererSVG, filename){
+			var XMLS = new XMLSerializer(); 
+			var svgfile = XMLS.serializeToString(rendererSVG.domElement); 
+			
+			var svgData = svgfile;
+			var preface = '<?xml version="1.0" standalone="no"?>\r\n';
+			var svgBlob = new Blob([preface, svgData], {type:"image/svg+xml;charset=utf-8"});
+			var svgUrl = URL.createObjectURL(svgBlob);
+			var downloadLink = document.createElement("a");
+			downloadLink.href = svgUrl;
+			downloadLink.download = filename;
+			document.body.appendChild(downloadLink);
+			downloadLink.click();
+			document.body.removeChild(downloadLink);	
+		}
+</script>
+</body>
+</html>

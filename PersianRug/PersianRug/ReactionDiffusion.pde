@@ -19,6 +19,8 @@ class  ReactionDiffusion
   PVector    caOffset;
   float      caCellSize;
   
+  float      diffusionA = 1.f;
+  float      diffusionB = 0.5f;
   float      feed = 0.055f;
   float      kill = 0.062f;
   color      colorRD;
@@ -64,7 +66,7 @@ class  ReactionDiffusion
         if ((caOffset.y <= i * cellSize && i * cellSize < height - caOffset.y)
             && (caOffset.x <= j * cellSize && j * cellSize < width - caOffset.x))
         {
-          if (ca.cells[k][l].state == 1 && new PVector(j * cellSize + cellSize / 2.f, i * cellSize + cellSize / 2.f).dist(new PVector(l * caCellSize + caCellSize / 2.f + caOffset.x, k * caCellSize + caCellSize / 2.f + caOffset.y)) < 2)
+          if (ca.cells[k][l].state == 1 && new PVector(j * cellSize + cellSize / 2.f, i * cellSize + cellSize / 2.f).dist(new PVector(l * caCellSize + caCellSize / 2.f + caOffset.x, k * caCellSize + caCellSize / 2.f + caOffset.y)) < 8)
             state = 1.f;
         }
         cellsPrev[i][j] = new RDCell(1.f, state);

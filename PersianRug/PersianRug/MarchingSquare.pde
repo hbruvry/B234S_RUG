@@ -8,9 +8,9 @@ class  MarchingSquare
   MarchingSquare(int resolution_, color colorMS_)
   {
     resolution = resolution_;
-    columns =    width / resolution + 1;
-    rows =       height / resolution + 1;
-    field =      new float[rows][columns];
+    columns =    width / resolution;
+    rows =       height / resolution;
+    field =      new float[rows + 1][columns + 1];
     colorMS =    colorMS_;
     return ;
   }
@@ -22,10 +22,7 @@ class  MarchingSquare
     ratio = (float)resolution / rd.cellSize;
     for (int i = 0; i < rows; i++)
       for (int j = 0; j < columns; j++)
-        if (i < rows - 1 && j < columns - 1)
-          field[i][j] = rd.cells[(int)(i * ratio)][(int)(j * ratio)].b - rd.cells[(int)(i * ratio)][(int)(j * ratio)].a;
-        else
-          field[i][j] = -0.5f;
+        field[i][j] = rd.cells[(int)(i * ratio)][(int)(j * ratio)].b - rd.cells[(int)(i * ratio)][(int)(j * ratio)].a;
     return ;
   }
   
