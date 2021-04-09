@@ -16,12 +16,13 @@
 		<script async type="module">
 			import * as THREE from 'https://unpkg.com/three@0.121.1/build/three.module.js';
 			import { OrbitControls } from 'https://unpkg.com/three@0.121.1/examples/jsm/controls/OrbitControls.js';
+			import Stats from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/stats.module.js';
 			import { GUI } from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/dat.gui.module.js';
 			import { MathUtils } from 'https://unpkg.com/three@0.121.1/build/three.module.js';
 			import { SVGRenderer } from 'https://unpkg.com/three@0.121.1/examples/jsm/renderers/SVGRenderer.js';
 
 			let container;
-			let camera, controls, scene, clock, renderer;
+			let camera, controls, scene, stats, renderer;
 
 			let	caCells, caCellsPrev;
 			let caMesh;
@@ -37,6 +38,12 @@
 			let rdOffset;
 			let rdColor;
 
+			let	msCells;
+			let	msMesh, msMeshes;
+			let msColumns, msRows;
+			let msOffset;
+			let msColor;
+
 			const params = {
 				caRule: 'B234/S',
 				caColumns: 48,
@@ -47,9 +54,9 @@
 				caColorStasis: '#2e2946',
 				caColorDeath: '#cb95ae',
 				caColorEmpty: '#ccbdc8',
-				rdCellSize: 3,
-				rdPresetA: "Precritical bubbles",
-				rdPresetB: "U-Skate World",
+				rdCellSize: 10,
+				rdPresetA: "Mazes & chaos",
+				rdPresetB: "Turing patterns",
 				rdDiffusionAA: 1.0,
 				rdDiffusionAB: 1.0,
 				rdDiffusionBA: 0.5,
@@ -60,16 +67,226 @@
 				rdKillB: 0.055,
 				rdIteration: 20,
 				rdColor: '#2e2946',
+				msCellSize: 30,
+				msColor: '#2e2946',
 			}
 
 			init();
 			animate();
+
+			function getMSState( cellA, cellB, cellC, cellD )
+			{
+				let state;
+    
+				state = (cellA > 0 ? 8 : 0) + (cellB > 0 ? 4 : 0) + (cellC > 0 ? 2 : 0) + (cellD > 0 ? 1 : 0);
+				return (state);
+			}
+
+			function addTriangle( posA, posB, posC, index )
+			{
+				let geometry, vertices, material;
+
+				geometry = new THREE.BufferGeometry();
+				material = new THREE.MeshBasicMaterial( { color: params.msColor } );
+				vertices = new Float32Array( [
+									posA.x, posA.y, posA.z,
+									posB.x, posB.y, posB.z,
+									posC.x, posC.y, posC.z,
+								] );
+				geometry.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
+				msMeshes.push( new THREE.Mesh( geometry, material ) );
+				scene.add ( msMeshes[index] );
+			}
+
+			function addQuad( posA, posB, posC, posD, index )
+			{
+				let geometry, vertices, material;
+
+				geometry = new THREE.BufferGeometry();
+				material = new THREE.MeshBasicMaterial( { color: params.msColor } );
+				vertices = new Float32Array( [
+									posA.x, posA.y, posA.z,
+									posB.x, posB.y, posB.z,
+									posC.x, posC.y, posC.z,
+									posA.x, posA.y, posA.z,
+									posC.x, posC.y, posC.z,
+									posD.x, posD.y, posD.z
+								] );
+				geometry.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
+				msMeshes.push( new THREE.Mesh( geometry, material ) );
+				scene.add ( msMeshes[index] );
+			}
+
+			function addPentagon( posA, posB, posC, posD, posE, index )
+			{
+				let geometry, vertices, material;
+
+				geometry = new THREE.BufferGeometry();
+				material = new THREE.MeshBasicMaterial( { color: params.msColor } );
+				vertices = new Float32Array( [
+									posA.x, posA.y, posA.z,
+									posB.x, posB.y, posB.z,
+									posC.x, posC.y, posC.z,
+									posA.x, posA.y, posA.z,
+									posC.x, posC.y, posC.z,
+									posD.x, posD.y, posD.z,
+									posA.x, posA.y, posA.z,
+									posD.x, posD.y, posD.z,
+									posE.x, posE.y, posE.z,
+								] );
+				geometry.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
+				msMeshes.push( new THREE.Mesh( geometry, material ) );
+				scene.add ( msMeshes[index] );
+			}
+
+			function displayMS()
+			{
+				let index;
+				let position;
+				let matrix;
+				let cellA, cellB, cellC, cellD;
+				let posA, posB, posC, posD;
+				let posE, posF, posG, posH;			
+				let state;
+				let threshold;
+
+				index = 0;
+				position =	new THREE.Vector3();
+				matrix =	new THREE.Matrix4();
+				while ( msMeshes.length > 0 )
+				{
+					scene.remove( msMeshes[ msMeshes.length - 1 ] );
+					msMeshes.pop();
+				}
+				msMeshes = [];
+				threshold = 0.125;
+				for ( let i = 0; i < msRows - 1; i++ )
+					for ( let j = 0; j < msColumns - 1; j++ )
+					{
+						cellA = msCells[i][j] + threshold;
+						cellB = msCells[i][j + 1] + threshold;
+						cellC = msCells[i + 1][j + 1] + threshold;
+						cellD = msCells[i + 1][j] + threshold;
+						position.x = j * params.msCellSize - msOffset.x;
+						position.y = i * params.msCellSize - msOffset.y;
+						position.z = 1.;
+						posA = new THREE.Vector3( position.x + params.msCellSize * cellA / ( cellA - cellB ), position.y, position.z );
+						posB = new THREE.Vector3( position.x + params.msCellSize, position.y + params.msCellSize * cellB / ( cellB - cellC ), position.z );
+						posC = new THREE.Vector3( position.x + params.msCellSize * ( 1.0 - cellC / ( cellC - cellD ) ), position.y + params.msCellSize, position.z );
+						posD = new THREE.Vector3( position.x, position.y + params.msCellSize * ( 1.0 - cellD / ( cellD - cellA ) ), position.z );
+						posE = new THREE.Vector3( position.x, position.y, position.z );
+						posF = new THREE.Vector3( position.x + params.msCellSize, position.y, position.z );
+						posG = new THREE.Vector3( position.x + params.msCellSize, position.y + params.msCellSize, position.z );
+						posH = new THREE.Vector3( position.x, position.y + params.msCellSize, position.z );
+						state = getMSState( Math.ceil( cellA ), Math.ceil( cellB ), Math.ceil( cellC ), Math.ceil( cellD ) );
+						switch ( state )
+						{	
+							case 1:
+								addTriangle( posC, posH, posD, index++);
+								break;
+							case 2:
+								addTriangle( posB, posG, posC, index++);
+								break;
+							case 3:
+								addQuad(posB, posG, posH, posD, index++);
+								break;
+							case 4:
+								addTriangle( posA, posF, posB, index++);
+								break;
+							case 5:
+								addTriangle( posC, posH, posD, index++);
+								addTriangle( posA, posF, posB, index++);
+								break;
+							case 6:
+								addQuad(posA, posF, posG, posC, index++);
+								break;
+							case 7:
+								addPentagon(posA, posF, posG, posH, posD, index++);
+								break;
+							case 8:
+								addTriangle( posA, posD, posE, index++);
+								break;
+							case 9:
+								addQuad(posA, posC, posH, posE, index++);
+								break;
+							case 10:
+								addTriangle( posA, posD, posE, index++);
+								addTriangle( posB, posG, posC, index++);
+								break;
+							case 11:
+								addPentagon(posE, posA, posB, posG, posH, index++);
+								break;
+							case 12:
+								addQuad(posE, posF, posB, posD, index++);
+								break;
+							case 13:
+								addPentagon(posE, posF, posB, posC, posH, index++);
+								break;
+							case 14:
+								addPentagon(posE, posF, posG, posC, posD, index++);
+								break;
+							case 15:
+								addQuad(posE, posF, posG, posH, index++);
+								break;
+						}
+					}
+				return ;
+			}
+
+			function updateMSCellsFromRD()
+			{
+				for ( let i = 0; i < msRows; i++ )
+					for ( let j = 0, k = 0, l = 0; j < msColumns; j++ )
+					{
+						k = Math.floor( i / ( msRows - 1 ) * ( rdRows - 1 ) );
+						l = Math.floor( j / ( msColumns - 1 ) * ( rdColumns - 1 ) );
+						msCells[i][j] = rdCells[k][l][1] - rdCells[k][l][0];
+					}
+				return ;
+			} 
+
+			function setMSCells()
+			{
+				let msCellSubdivision;
+				let geometry, material;
+
+				msCellSubdivision = params.caCellSize / params.msCellSize;
+				msColumns = Math.round(params.caColumns * msCellSubdivision) + 2;
+				msRows = Math.round(params.caRows * msCellSubdivision) + 2;
+				msCells = new Array( msRows );
+				for ( let i = 0; i < msRows; i++ )
+					msCells[i] = new Array( msColumns );
+				msOffset =	new THREE.Vector2( msColumns, msRows ).divideScalar( 2.0 );
+				msOffset =	msOffset.addScalar( -0.5 ).multiplyScalar( params.msCellSize );
+				msColor =	new THREE.Color( params.msColor );
+				geometry =	new THREE.PlaneGeometry( params.msCellSize, params.msCellSize, 0, 0);
+				material =	new THREE.MeshBasicMaterial();
+				scene.remove( msMesh );
+				msMesh =	new THREE.InstancedMesh( geometry, material, msColumns * msRows );
+				msMesh.instanceMatrix.setUsage( THREE.DynamicDrawUsage );
+				scene.add( msMesh );
+				return ;	
+			}
+
+			function updateMS()
+			{
+				setMS();
+				return ;
+			}
+
+			function setMS()
+			{
+				setMSCells();
+				updateMSCellsFromRD();
+				return ;
+			}
 
 			function displayRD()
 			{
 				let index;
 				let position;
 				let matrix;
+				let value;
 
 				index = 0;
 				position =	new THREE.Vector3();
@@ -77,15 +294,13 @@
 				for ( let i = 0; i < rdRows; i++ )
 					for ( let j = 0; j < rdColumns; j++ )
 					{
+						value = rdCells[i][j][0] - rdCells[i][j][1];
 						position.x = j * params.rdCellSize - rdOffset.x;
-						position.y = -i * params.rdCellSize + rdOffset.y;
-						if ( rdCells[i][j][0] - rdCells[i][j][1] < 0.5 )
-							position.z = 0.5;
-						else
-							position.z = 8000;
+						position.y = i * params.rdCellSize - rdOffset.y;
+						position.z = 0.5;
 						matrix.setPosition( position );
 						rdMesh.setMatrixAt( index, matrix );
-						rdMesh.setColorAt( index, rdColor );
+						rdMesh.setColorAt( index, new THREE.Color( value, value, value ) );
 						index++;
 					}
 				rdMesh.instanceMatrix.needsUpdate = true;
@@ -203,6 +418,7 @@
 				rdMesh =	new THREE.InstancedMesh( geometry, material, rdColumns * rdRows );
 				rdMesh.instanceMatrix.setUsage( THREE.DynamicDrawUsage );
 				scene.add( rdMesh );
+				msMeshes = [];
 				return ;
 			}
 
@@ -232,9 +448,8 @@
 
 			function setRD()
 			{
-				setRDCells();
-				
-				if ( params.rdPresetA === 'Negative bubbles') setRDParamsA( 0.2097, 0.1050, 0.0980, 0.0555 );
+				setRDCells();		
+				if ( params.rdPresetA === 'Negative bubbles')			setRDParamsA( 0.2097, 0.1050, 0.0980, 0.0555 );
 				else if ( params.rdPresetA === 'Positive bubbles' )		setRDParamsA( 0.2097, 0.1050, 0.0980, 0.0570 );
 				else if ( params.rdPresetA === 'Precritical bubbles' )	setRDParamsA( 0.2097, 0.1050, 0.0820, 0.0590 );
 				else if ( params.rdPresetA === 'Worms & loops' )		setRDParamsA( 0.2097, 0.1050, 0.0820, 0.0600 );
@@ -253,7 +468,7 @@
 				else if ( params.rdPresetA === 'Mazes' )				setRDParamsA( 0.2097, 0.1050, 0.0290, 0.0570 );
 				else if ( params.rdPresetA === 'Mazes & chaos' )		setRDParamsA( 0.2097, 0.1050, 0.0260, 0.0550 );
 				else if ( params.rdPresetA === 'Chaos' )				setRDParamsA( 0.2097, 0.1050, 0.0260, 0.0510 );
-				if ( params.rdPresetB === 'Negative bubbles') setRDParamsB( 0.2097, 0.1050, 0.0980, 0.0555 );
+				if ( params.rdPresetB === 'Negative bubbles')			setRDParamsB( 0.2097, 0.1050, 0.0980, 0.0555 );
 				else if ( params.rdPresetB === 'Positive bubbles' )		setRDParamsB( 0.2097, 0.1050, 0.0980, 0.0570 );
 				else if ( params.rdPresetB === 'Precritical bubbles' )	setRDParamsB( 0.2097, 0.1050, 0.0820, 0.0590 );
 				else if ( params.rdPresetB === 'Worms & loops' )		setRDParamsB( 0.2097, 0.1050, 0.0820, 0.0600 );
@@ -272,7 +487,6 @@
 				else if ( params.rdPresetB === 'Mazes' )				setRDParamsB( 0.2097, 0.1050, 0.0290, 0.0570 );
 				else if ( params.rdPresetB === 'Mazes & chaos' )		setRDParamsB( 0.2097, 0.1050, 0.0260, 0.0550 );
 				else if ( params.rdPresetB === 'Chaos' )				setRDParamsB( 0.2097, 0.1050, 0.0260, 0.0510 );
-				
 				updateRDCellsFromCA();
 				return ;
 			}
@@ -336,9 +550,9 @@
 					for ( let j = 0, index = 0; j < params.caColumns; j++ )
 					{
 						neighbors = getCANeighbors( j, i );
-						if (caCellsPrev[i][j] == 0 && caRuleBorn[neighbors] == 1)
+						if ( caCellsPrev[i][j] == 0 && caRuleBorn[neighbors] == 1 )
 							caCells[i][j] = 1;
-						else if (caCellsPrev[i][j] == 1 && caRuleStasis[neighbors] == 0)
+						else if ( caCellsPrev[i][j] == 1 && caRuleStasis[neighbors] == 0 )
 							caCells[i][j] = 0;
 					}
 				return ;
@@ -426,7 +640,7 @@
 			function createGUI()
 			{
 				let gui;
-				let folderCA, folderRD;
+				let folderCA, folderRD, folderMS;
 				let svgExport;
 
 				gui = new GUI();
@@ -441,17 +655,13 @@
 				folderCA.addColor( params, 'caColorStasis' ).name( 'colorStasis' ).listen().onChange( function () { updateCACells() } );
 				folderCA.addColor( params, 'caColorDeath' ).name( 'colorDeath' ).listen().onChange( function () { updateCACells() } );
 				folderRD = gui.addFolder( 'Reaction diffusion' );
-				folderRD.add( params, 'rdCellSize', 1, 8, 1 ).name( 'cellSize' ).listen().onChange( function () { updateRD() } );
+				folderRD.add( params, 'rdCellSize', 1, 10, 1 ).name( 'cellSize' ).listen().onChange( function () { updateRD() } );
 				folderRD.add( params, 'rdPresetA', rdStates ).name( 'presetIn' ).onChange( function () { updateRD() } );
 				folderRD.add( params, 'rdPresetB', rdStates ).name( 'presetOut' ).onChange( function () { updateRD() } );
-				// folderRD.add( params, 'rdDiffusionA', 0., 1., 0.1 ).name( 'diffusionA' ).listen().onChange( function () { updateRD() } );
-				// folderRD.add( params, 'rdDiffusionB', 0., 1., 0.1 ).name( 'diffusionB' ).listen().onChange( function () { updateRD() } );
-				// folderRD.add( params, 'rdFeedA', 0., 0.1, 0.001 ).name( 'feedA' ).listen().onChange( function () { updateRD() } );
-				// folderRD.add( params, 'rdFeedB', 0., 0.1, 0.001 ).name( 'feedB' ).listen().onChange( function () { updateRD() } );
-				// folderRD.add( params, 'rdKillA', 0., 0.1, 0.001 ).name( 'killA' ).listen().onChange( function () { updateRD() } );
-				// folderRD.add( params, 'rdKillB', 0., 0.1, 0.001 ).name( 'killB' ).listen().onChange( function () { updateRD() } );
 				folderRD.add( params, 'rdIteration', 0, 240, 1 ).name( 'iteration' ).listen().onChange( function () { updateRD() } );
-				folderRD.addColor( params, 'rdColor' ).name( 'color' ).listen().onChange( function () { updateRD() } );
+				folderMS = gui.addFolder( 'Marching square' );
+				folderMS.add( params, 'msCellSize', 2, 20, 1 ).name( 'cellSize' ).listen().onChange( function () { updateMS() } );
+				folderMS.addColor( params, 'msColor' ).name( 'color' ).listen().onChange( function () { updateMS() } );
 				svgExport = { add:function(){ exportToSVG(); } };
 				gui.add( svgExport, 'add' ).name( 'Export to SVG' );
 				return ;
@@ -468,8 +678,12 @@
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0xf8f8ff );
 
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
 				setCA();
 				setRD();
+				setMS();
 				createGUI();
 
 				renderer = new THREE.WebGLRenderer( { antialias: true, preserveDrawingBuffer: true } );
@@ -493,9 +707,12 @@
 			function animate()
 			{
 				requestAnimationFrame( animate );
-				controls.update();
 				updateRDCells();
-				displayRD();
+				//displayRD();
+				updateMSCellsFromRD();
+				displayMS();
+				controls.update();
+				stats.update();
 				renderer.render( scene, camera );
 				return ;
 			}
