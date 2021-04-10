@@ -20,31 +20,32 @@
 			import { GUI } from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/dat.gui.module.js';
 			import { MathUtils } from 'https://unpkg.com/three@0.121.1/build/three.module.js';
 			import { SVGRenderer } from 'https://unpkg.com/three@0.121.1/examples/jsm/renderers/SVGRenderer.js';
+			import { BufferGeometryUtils } from 'https://unpkg.com/three@0.121.1/examples/jsm/utils/BufferGeometryUtils.js';
 
 			let container;
 			let camera, controls, scene, stats, renderer;
+			let frameCount = 0;
 
 			let	caCells, caCellsPrev;
 			let caMesh;
+			let caMeshes = [];
 			let caRuleBorn = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 			let caRuleStasis = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 			let caOffset;
 			let caColorBorn, caColorStasis, caColorDeath, caColorEmpty;
 
 			let	rdCells, rdCellsPrev;
+			let	rdCellSub;
 			let	rdMesh;
 			let rdStates = [ 'Negative bubbles', 'Positive bubbles', 'Precritical bubbles', 'Worms & loops', 'Stable solutions', 'U-Skate World', 'Worms', 'Worms to maze', 'Negatons', 'Turing patterns', 'Chaos to Turing', 'Fingerprints', 'Chaos & negatons', 'Spots & worms', 'Replicating spots', 'Resonant mazes', 'Mazes', 'Mazes & chaos', 'Chaos' ]; 
-			let rdColumns, rdRows;
-			let rdOffset;
+			let rdColumns, rdRows, rdOffset;
 			let rdColor;
 
+			let msCellSize;
 			let	msCells;
 			let	msMesh, msMeshes;
-			let msColumns, msRows;
-			let msOffset;
-			let msColor;
 
-			const params = {
+			const ui = {
 				caRule: 'B234/S',
 				caColumns: 48,
 				caRows: 24,
@@ -55,228 +56,210 @@
 				caColorDeath: '#cb95ae',
 				caColorEmpty: '#ccbdc8',
 				rdCellSize: 10,
-				rdPresetA: "Mazes & chaos",
-				rdPresetB: "Turing patterns",
-				rdDiffusionAA: 1.0,
-				rdDiffusionAB: 1.0,
-				rdDiffusionBA: 0.5,
-				rdDiffusionBB: 0.5,
-				rdFeedA: 0.025,
-				rdFeedB: 0.015,
-				rdKillA: 0.050,
-				rdKillB: 0.055,
-				rdIteration: 20,
+				rdPresetA: 'U-Skate World',
+				rdPresetB: 'Turing patterns',
+				rdDiffusionA: 0.2097,
+				rdDiffusionB: 0.1050,
+				rdFeedA: 0.,
+				rdFeedB: 0.,
+				rdKillA: 0.,
+				rdKillB: 0.,
+				rdIteration: 1024,
 				rdColor: '#2e2946',
-				msCellSize: 30,
-				msColor: '#2e2946',
 			}
 
 			init();
 			animate();
 
-			function getMSState( cellA, cellB, cellC, cellD )
+			function getMSState( cells )
 			{
 				let state;
     
-				state = (cellA > 0 ? 8 : 0) + (cellB > 0 ? 4 : 0) + (cellC > 0 ? 2 : 0) + (cellD > 0 ? 1 : 0);
+				state = (cells[0] > 0. ? 8 : 0) + (cells[1] > 0. ? 4 : 0)
+					+ (cells[2] > 0. ? 2 : 0) + (cells[3] > 0. ? 1 : 0);
 				return (state);
 			}
 
-			function addTriangle( posA, posB, posC, index )
+			function setTriPositions( vecA, vecB, vecC )
 			{
-				let geometry, vertices, material;
+				let positions;
 
-				geometry = new THREE.BufferGeometry();
-				material = new THREE.MeshBasicMaterial( { color: params.msColor } );
-				vertices = new Float32Array( [
-									posA.x, posA.y, posA.z,
-									posB.x, posB.y, posB.z,
-									posC.x, posC.y, posC.z,
-								] );
-				geometry.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
-				msMeshes.push( new THREE.Mesh( geometry, material ) );
-				scene.add ( msMeshes[index] );
+				positions = new Float32Array( 27 );
+				positions.set( new Float32Array( [
+									vecA.x, vecA.y, vecA.z,
+									vecB.x, vecB.y, vecB.z,
+									vecC.x, vecC.y, vecC.z
+								] ), 0 );
+				return ( positions );
 			}
 
-			function addQuad( posA, posB, posC, posD, index )
+			function setTrisPositions( vecA, vecB, vecC, vecD, vecE, vecF )
 			{
-				let geometry, vertices, material;
+				let positions;
 
-				geometry = new THREE.BufferGeometry();
-				material = new THREE.MeshBasicMaterial( { color: params.msColor } );
-				vertices = new Float32Array( [
-									posA.x, posA.y, posA.z,
-									posB.x, posB.y, posB.z,
-									posC.x, posC.y, posC.z,
-									posA.x, posA.y, posA.z,
-									posC.x, posC.y, posC.z,
-									posD.x, posD.y, posD.z
-								] );
-				geometry.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
-				msMeshes.push( new THREE.Mesh( geometry, material ) );
-				scene.add ( msMeshes[index] );
+				positions = new Float32Array( 27 );
+				positions.set( new Float32Array( [
+									vecA.x, vecA.y, vecA.z,
+									vecB.x, vecB.y, vecB.z,
+									vecC.x, vecC.y, vecC.z,
+									vecD.x, vecD.y, vecD.z,
+									vecE.x, vecE.y, vecE.z,
+									vecF.x, vecF.y, vecF.z
+								] ), 0 );
+				return ( positions );
 			}
 
-			function addPentagon( posA, posB, posC, posD, posE, index )
+			function setQuadPositions( vecA, vecB, vecC, vecD )
 			{
-				let geometry, vertices, material;
+				let positions;
 
-				geometry = new THREE.BufferGeometry();
-				material = new THREE.MeshBasicMaterial( { color: params.msColor } );
-				vertices = new Float32Array( [
-									posA.x, posA.y, posA.z,
-									posB.x, posB.y, posB.z,
-									posC.x, posC.y, posC.z,
-									posA.x, posA.y, posA.z,
-									posC.x, posC.y, posC.z,
-									posD.x, posD.y, posD.z,
-									posA.x, posA.y, posA.z,
-									posD.x, posD.y, posD.z,
-									posE.x, posE.y, posE.z,
+				positions = new Float32Array( 27 );
+				positions.set( new Float32Array( [
+									vecA.x, vecA.y, vecA.z,
+									vecB.x, vecB.y, vecB.z,
+									vecC.x, vecC.y, vecC.z,
+									vecA.x, vecA.y, vecA.z,
+									vecC.x, vecC.y, vecC.z,
+									vecD.x, vecD.y, vecD.z,
+								] ), 0 );
+				return ( positions );
+			}
+
+			function setPentPositions( vecA, vecB, vecC, vecD, vecE )
+			{
+				let positions;
+
+				positions = new Float32Array( [
+									vecA.x, vecA.y, vecA.z,
+									vecB.x, vecB.y, vecB.z,
+									vecC.x, vecC.y, vecC.z,
+									vecA.x, vecA.y, vecA.z,
+									vecC.x, vecC.y, vecC.z,
+									vecD.x, vecD.y, vecD.z,
+									vecA.x, vecA.y, vecA.z,
+									vecD.x, vecD.y, vecD.z,
+									vecE.x, vecE.y, vecE.z,
 								] );
-				geometry.setAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
-				msMeshes.push( new THREE.Mesh( geometry, material ) );
-				scene.add ( msMeshes[index] );
+				return ( positions );
 			}
 
 			function displayMS()
 			{
 				let index;
-				let position;
-				let matrix;
-				let cellA, cellB, cellC, cellD;
-				let posA, posB, posC, posD;
-				let posE, posF, posG, posH;			
-				let state;
-				let threshold;
+				let cells;
+				let v;
+				let positions, position;
+				let h;
 
-				index = 0;
-				position =	new THREE.Vector3();
-				matrix =	new THREE.Matrix4();
-				while ( msMeshes.length > 0 )
-				{
-					scene.remove( msMeshes[ msMeshes.length - 1 ] );
-					msMeshes.pop();
-				}
-				msMeshes = [];
-				threshold = 0.125;
-				for ( let i = 0; i < msRows - 1; i++ )
-					for ( let j = 0; j < msColumns - 1; j++ )
+				index =	0;
+				h =		0.125;
+				cells =	[4];
+				v =		[8];
+				position = new THREE.Vector3();
+				positions = msMesh.geometry.attributes.position.array;
+				for ( let i = 0; i < rdRows - 1; i++ )
+					for ( let j = 0; j < rdColumns - 1; j++ )
 					{
-						cellA = msCells[i][j] + threshold;
-						cellB = msCells[i][j + 1] + threshold;
-						cellC = msCells[i + 1][j + 1] + threshold;
-						cellD = msCells[i + 1][j] + threshold;
-						position.x = j * params.msCellSize - msOffset.x;
-						position.y = i * params.msCellSize - msOffset.y;
+						cells[0] = msCells[i][j] + h;
+						cells[1] = msCells[i][j + 1] + h;
+						cells[2] = msCells[i + 1][j + 1] + h;
+						cells[3] = msCells[i + 1][j] + h;
+
+						position.x = j * msCellSize - rdOffset.x;
+						position.y = i * msCellSize - rdOffset.y;
 						position.z = 1.;
-						posA = new THREE.Vector3( position.x + params.msCellSize * cellA / ( cellA - cellB ), position.y, position.z );
-						posB = new THREE.Vector3( position.x + params.msCellSize, position.y + params.msCellSize * cellB / ( cellB - cellC ), position.z );
-						posC = new THREE.Vector3( position.x + params.msCellSize * ( 1.0 - cellC / ( cellC - cellD ) ), position.y + params.msCellSize, position.z );
-						posD = new THREE.Vector3( position.x, position.y + params.msCellSize * ( 1.0 - cellD / ( cellD - cellA ) ), position.z );
-						posE = new THREE.Vector3( position.x, position.y, position.z );
-						posF = new THREE.Vector3( position.x + params.msCellSize, position.y, position.z );
-						posG = new THREE.Vector3( position.x + params.msCellSize, position.y + params.msCellSize, position.z );
-						posH = new THREE.Vector3( position.x, position.y + params.msCellSize, position.z );
-						state = getMSState( Math.ceil( cellA ), Math.ceil( cellB ), Math.ceil( cellC ), Math.ceil( cellD ) );
-						switch ( state )
+
+						v[0] = new THREE.Vector3( msCellSize * cells[0] / ( cells[0] - cells[1] ), 0., 0. ).add( position );
+						v[1] = new THREE.Vector3( msCellSize, msCellSize * cells[1] / ( cells[1] - cells[2] ), 0. ).add( position );
+						v[2] = new THREE.Vector3( msCellSize * ( 1.0 - cells[2] / ( cells[2] - cells[3] ) ), msCellSize, 0. ).add( position );
+						v[3] = new THREE.Vector3( 0., msCellSize * ( 1.0 - cells[3] / ( cells[3] - cells[0] ) ), 0. ).add( position );
+						v[4] = position.clone();
+						v[5] = new THREE.Vector3( msCellSize, 0., 0. ).add( position );
+						v[6] = new THREE.Vector3( msCellSize, msCellSize, 0. ).add( position );
+						v[7] = new THREE.Vector3( 0., msCellSize, 0 ).add( position );
+
+						for ( let k = 0; k < 4; k++ )
+							cells[k] = Math.ceil( cells[k] )
+						switch ( getMSState( cells ) )
 						{	
+							case 0:
+								positions.set( new Float32Array( 27 ), index ); break;
 							case 1:
-								addTriangle( posC, posH, posD, index++);
-								break;
+								positions.set( setTriPositions( v[2], v[7], v[3] ), index ); break;
 							case 2:
-								addTriangle( posB, posG, posC, index++);
-								break;
+								positions.set( setTriPositions( v[1], v[6], v[2] ), index ); break;
 							case 3:
-								addQuad(posB, posG, posH, posD, index++);
-								break;
+								positions.set( setQuadPositions( v[1], v[6], v[7], v[3] ), index ); break;
 							case 4:
-								addTriangle( posA, posF, posB, index++);
-								break;
+								positions.set( setTriPositions( v[0], v[5], v[1] ), index ); break;
 							case 5:
-								addTriangle( posC, posH, posD, index++);
-								addTriangle( posA, posF, posB, index++);
-								break;
+								positions.set( setTrisPositions( v[2], v[7], v[3], v[0], v[5], v[1] ), index ); break;
 							case 6:
-								addQuad(posA, posF, posG, posC, index++);
-								break;
+								positions.set( setQuadPositions( v[0], v[5], v[6], v[2] ), index ); break;
 							case 7:
-								addPentagon(posA, posF, posG, posH, posD, index++);
-								break;
+								positions.set( setPentPositions( v[0], v[5], v[6], v[7], v[3] ), index ); break;
 							case 8:
-								addTriangle( posA, posD, posE, index++);
-								break;
+								positions.set( setTriPositions( v[0], v[3], v[4] ), index ); break;
 							case 9:
-								addQuad(posA, posC, posH, posE, index++);
-								break;
+								positions.set( setQuadPositions( v[0], v[2], v[7], v[4] ), index ); break;
 							case 10:
-								addTriangle( posA, posD, posE, index++);
-								addTriangle( posB, posG, posC, index++);
-								break;
+								positions.set( setTrisPositions( v[0], v[3], v[4], v[1], v[6], v[2] ), index ); break;
 							case 11:
-								addPentagon(posE, posA, posB, posG, posH, index++);
-								break;
+								positions.set( setPentPositions( v[4], v[0], v[1], v[6], v[7] ), index ); break;
 							case 12:
-								addQuad(posE, posF, posB, posD, index++);
-								break;
+								positions.set( setQuadPositions( v[4], v[5], v[1], v[3] ), index ); break;
 							case 13:
-								addPentagon(posE, posF, posB, posC, posH, index++);
-								break;
+								positions.set( setPentPositions( v[4], v[5], v[1], v[2], v[7] ), index ); break;
 							case 14:
-								addPentagon(posE, posF, posG, posC, posD, index++);
-								break;
+								positions.set( setPentPositions( v[4], v[5], v[6], v[2], v[3] ), index ); break;
 							case 15:
-								addQuad(posE, posF, posG, posH, index++);
-								break;
+								positions.set( setQuadPositions( v[4], v[5], v[6], v[7] ), index ); break;
 						}
+						index += 27;
 					}
+				msMesh.geometry.attributes.position.needsUpdate = true;
 				return ;
 			}
 
 			function updateMSCellsFromRD()
 			{
-				for ( let i = 0; i < msRows; i++ )
-					for ( let j = 0, k = 0, l = 0; j < msColumns; j++ )
-					{
-						k = Math.floor( i / ( msRows - 1 ) * ( rdRows - 1 ) );
-						l = Math.floor( j / ( msColumns - 1 ) * ( rdColumns - 1 ) );
-						msCells[i][j] = rdCells[k][l][1] - rdCells[k][l][0];
-					}
+				for ( let i = 0; i < rdRows; i++ )
+					for ( let j = 0; j < rdColumns; j++ )
+						msCells[i][j] = rdCells[i][j][1] - rdCells[i][j][0];
 				return ;
-			} 
+			}
 
-			function setMSCells()
+			function setMSMesh()
 			{
-				let msCellSubdivision;
+				let positions
 				let geometry, material;
 
-				msCellSubdivision = params.caCellSize / params.msCellSize;
-				msColumns = Math.round(params.caColumns * msCellSubdivision) + 2;
-				msRows = Math.round(params.caRows * msCellSubdivision) + 2;
-				msCells = new Array( msRows );
-				for ( let i = 0; i < msRows; i++ )
-					msCells[i] = new Array( msColumns );
-				msOffset =	new THREE.Vector2( msColumns, msRows ).divideScalar( 2.0 );
-				msOffset =	msOffset.addScalar( -0.5 ).multiplyScalar( params.msCellSize );
-				msColor =	new THREE.Color( params.msColor );
-				geometry =	new THREE.PlaneGeometry( params.msCellSize, params.msCellSize, 0, 0);
-				material =	new THREE.MeshBasicMaterial();
+				positions =	new Float32Array( (rdRows - 1) * (rdColumns - 1) * 9 * 3 );
+				geometry =	new THREE.BufferGeometry();
+				geometry.setAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+				material = new THREE.MeshBasicMaterial( { color: rdColor } );
 				scene.remove( msMesh );
-				msMesh =	new THREE.InstancedMesh( geometry, material, msColumns * msRows );
-				msMesh.instanceMatrix.setUsage( THREE.DynamicDrawUsage );
+				msMesh = new THREE.Mesh( geometry, material );
 				scene.add( msMesh );
 				return ;	
 			}
 
-			function updateMS()
+			function setMSCells()
 			{
-				setMS();
-				return ;
+				let msCellSubdivision;
+				let positions, geometry, material;
+
+				msCellSize = ui.rdCellSize;
+				msCells = new Array( rdRows );
+				for ( let i = 0; i < rdRows; i++ )
+					msCells[i] = new Array( rdColumns );
+				return ;	
 			}
 
 			function setMS()
 			{
 				setMSCells();
+				setMSMesh();
 				updateMSCellsFromRD();
 				return ;
 			}
@@ -295,8 +278,8 @@
 					for ( let j = 0; j < rdColumns; j++ )
 					{
 						value = rdCells[i][j][0] - rdCells[i][j][1];
-						position.x = j * params.rdCellSize - rdOffset.x;
-						position.y = i * params.rdCellSize - rdOffset.y;
+						position.x = j * ui.rdCellSize - rdOffset.x;
+						position.y = i * ui.rdCellSize - rdOffset.y;
 						position.z = 0.5;
 						matrix.setPosition( position );
 						rdMesh.setMatrixAt( index, matrix );
@@ -344,8 +327,22 @@
 			{	
 				let a, b, abb;
 				let feed, kill;
-				let diffusionA, diffusionB;
 
+				for ( let i = 1; i < rdRows - 1; i++ )
+					for ( let j = 1; j < rdColumns - 1; j++ )
+					{
+						a = rdCellsPrev[i][j][0];
+						b = rdCellsPrev[i][j][1];
+
+						abb = a * b * b;
+						feed = THREE.MathUtils.mapLinear( i, 1, rdRows - 2, ui.rdFeedA, ui.rdFeedB );
+						kill = THREE.MathUtils.mapLinear( j, 1, rdColumns - 2, ui.rdKillA, ui.rdKillB );
+						
+						rdCells[i][j][0] = a + ui.rdDiffusionA * laplaceA( i, j ) - abb + feed * ( 1. - a );
+						rdCells[i][j][1] = b + ui.rdDiffusionB * laplaceB( i, j ) + abb - ( kill + feed ) * b;
+						rdCells[i][j][0] = THREE.MathUtils.clamp( rdCells[i][j][0], 0., 1. );
+						rdCells[i][j][1] = THREE.MathUtils.clamp( rdCells[i][j][1], 0., 1. );
+					}
 				rdCellsPrev = [];
 				for ( let i = 0; i < rdCells.length; i++ )
 				{
@@ -353,21 +350,6 @@
 					for ( let j = 0; j < rdCells[i].length; j++ )
 						rdCellsPrev[i][j] = rdCells[i][j].slice( 0 );
 				}
-				for ( let i = 1; i < rdRows - 1; i++ )
-					for ( let j = 1; j < rdColumns - 1; j++ )
-					{
-						a = rdCellsPrev[i][j][0];
-						b = rdCellsPrev[i][j][1];
-						abb = a * b * b;
-						feed = THREE.MathUtils.lerp( params.rdFeedA, params.rdFeedB, i / rdRows );
-						kill = THREE.MathUtils.lerp( params.rdKillA, params.rdKillB, j / rdColumns );
-						diffusionA = THREE.MathUtils.lerp( params.rdDiffusionAA, params.rdDiffusionAB, i / rdRows );
-						diffusionB = THREE.MathUtils.lerp( params.rdDiffusionBA, params.rdDiffusionBB, j / rdColumns );
-						rdCells[i][j][0] = a + diffusionA * laplaceA( i, j ) - abb + feed * ( 1. - a );
-						rdCells[i][j][1] = b + diffusionB * laplaceB( i, j ) + abb - ( kill + feed ) * b;
-						rdCells[i][j][0] = THREE.MathUtils.clamp( rdCells[i][j][0], 0., 1. );
-						rdCells[i][j][1] = THREE.MathUtils.clamp( rdCells[i][j][1], 0., 1. );
-					}
 				return ;				
 			}
 
@@ -376,153 +358,161 @@
 				let distance;
 				let positionCA, positionRD;
 
-				distance =		params.caCellSize * params.caCellSize / 16.0;
+				distance =		ui.rdCellSize * ui.rdCellSize * 2.;
 				positionCA =	new THREE.Vector2();
 				positionRD =	new THREE.Vector2();
-				for ( let i = 0; i < rdRows; i++ )
-					for ( let j = 0, k = 0, l = 0; j < rdColumns; j++ )
+				for ( let i = 1; i < rdRows - 1; i++ )
+					for ( let j = 1, k = 0, l = 0; j < rdColumns - 1; j++ )
 					{
-						k = Math.floor( i / rdRows * params.caRows );
-						l = Math.floor( j / rdColumns * params.caColumns );
-						positionCA.x = l * params.caCellSize - caOffset.x;
-						positionCA.y = -k * params.caCellSize + caOffset.y;
-						positionRD.x = j * params.rdCellSize - rdOffset.x;
-						positionRD.y = -i * params.rdCellSize + rdOffset.y;
+						k = Math.floor( (i - 1) / rdCellSub );
+						l = Math.floor( (j - 1) / rdCellSub );				
+						positionCA.x = l * ui.caCellSize - caOffset.x;
+						positionCA.y = -k * ui.caCellSize + caOffset.y;
+						positionRD.x = j * ui.rdCellSize - rdOffset.x;
+						positionRD.y = -i * ui.rdCellSize + rdOffset.y;	
 						if ( caCells[k][l] > 0 && positionRD.distanceToSquared(positionCA) < distance )
-							rdCells[i][j] = [1.0, 1.0];
+							rdCellsPrev[i][j] = [1.0, 1.0];
 					}
 				return ;
 			}
 
-			function setRDCells()
+			function setRDMesh()
 			{
-				let rdCellSubdivision;
 				let geometry, material;
 
-				rdCellSubdivision = params.caCellSize / params.rdCellSize;
-				rdColumns = Math.round(params.caColumns * rdCellSubdivision) + 2;
-				rdRows = Math.round(params.caRows * rdCellSubdivision) + 2;
-				rdCells = new Array( rdRows );
-				for ( let i = 0; i < rdRows; i++ )
-				{
-					rdCells[i] = new Array( rdColumns );
-					for ( let j = 0; j < rdColumns; j++ )
-						rdCells[i][j] = [1.0, 0.0];
-				}
-				rdOffset =	new THREE.Vector2( rdColumns, rdRows ).divideScalar( 2.0 );
-				rdOffset =	rdOffset.addScalar( -0.5 ).multiplyScalar( params.rdCellSize );
-				rdColor =	new THREE.Color( params.rdColor );
-				geometry =	new THREE.PlaneGeometry( params.rdCellSize, params.rdCellSize, 0, 0);
+				geometry =	new THREE.PlaneGeometry( ui.rdCellSize / 2., ui.rdCellSize / 2., 0, 0);
 				material =	new THREE.MeshBasicMaterial();
 				scene.remove( rdMesh );
 				rdMesh =	new THREE.InstancedMesh( geometry, material, rdColumns * rdRows );
 				rdMesh.instanceMatrix.setUsage( THREE.DynamicDrawUsage );
 				scene.add( rdMesh );
-				msMeshes = [];
+				return ;
+			}	
+
+			function setRDCells()
+			{
+				rdCells = new Array( rdRows );
+				rdCellsPrev = new Array( rdRows );
+				for ( let i = 0; i < rdRows; i++ )
+				{
+					rdCells[i] = new Array( rdColumns );
+					rdCellsPrev[i] = new Array( rdColumns );
+					for ( let j = 0; j < rdColumns; j++ )
+					{
+						rdCells[i][j] = [1.0, 0.0];
+						rdCellsPrev[i][j] = [1.0, 0.0];
+					}
+				}
 				return ;
 			}
 
-			function updateRD()
+			function setRDVariables()
 			{
-				setRD();
-				return ;
+				rdCellSub =	ui.caCellSize / ui.rdCellSize;
+				rdColumns =	Math.round(ui.caColumns * rdCellSub) + 2;
+				rdRows =	Math.round(ui.caRows * rdCellSub) + 2;
+				rdCellSub =	(rdRows - 2) / ui.caRows;
+				rdOffset =	new THREE.Vector2( rdColumns, rdRows ).divideScalar( 2. );
+				rdOffset =	rdOffset.addScalar( -0.5 ).multiplyScalar( ui.rdCellSize );
+				rdColor =	new THREE.Color( ui.rdColor );
+				return ;	
 			}
 
-			function setRDParamsA( diffusionA, diffusionB, feed, kill )
+			function setRDParams( preset, indice )
 			{
-				params.rdDiffusionAA = diffusionA;
-				params.rdDiffusionBA = diffusionB;
-				params.rdFeedA = feed;
-				params.rdKillA = kill;
-				return ;
-			}
+				let feed, kill;
 
-			function setRDParamsB( diffusionA, diffusionB, feed, kill )
-			{
-				params.rdDiffusionAB = diffusionA;
-				params.rdDiffusionBB = diffusionB;
-				params.rdFeedB = feed;
-				params.rdKillB = kill;
+				switch ( preset )
+				{
+					case 'Negative bubbles':
+						feed = 0.0980; kill = 0.0555; break;
+					case 'Positive bubbles':
+						feed = 0.0980; kill = 0.0570; break;
+					case 'Precritical bubbles':
+						feed = 0.0820; kill = 0.0590; break;
+					case 'Worms & loops':
+						feed = 0.0820; kill = 0.0600; break;
+					case 'Stable solutions':
+						feed = 0.0740 ; kill = 0.0640; break;
+					case 'U-Skate World':
+						feed = 0.0620; kill = 0.0609; break;
+					case 'Worms':
+						feed = 0.0580; kill = 0.0650; break;
+					case 'Worms to maze':
+						feed = 0.0460; kill = 0.0630; break;
+					case 'Negatons':
+						feed = 0.0460; kill = 0.0594; break;
+					case 'Turing patterns':
+						feed = 0.0420; kill = 0.0590; break;
+					case 'Chaos to Turing':
+						feed = 0.0390; kill = 0.0580; break;
+					case 'Fingerprints':
+						feed = 0.0370; kill = 0.0600; break;
+					case 'Chaos & negatons':
+						feed = 0.0353; kill = 0.0566; break;
+					case 'Spots & worms':
+						feed = 0.0340; kill = 0.0618; break;
+					case 'Replicating spots':
+						feed = 0.0300; kill = 0.0630; break;
+					case 'Resonant mazes':
+						feed = 0.0300; kill = 0.0565; break;
+					case 'Mazes':
+						feed = 0.0290; kill = 0.0570; break;
+					case 'Mazes & chaos':
+						feed = 0.0260; kill = 0.0550; break;
+					case 'Chaos':
+						feed = 0.0260; kill = 0.0510; break;
+				}
+				switch ( indice )
+				{
+					case 0:
+						ui.rdFeedA = feed; ui.rdKillA = kill; break;
+					case 1:
+						ui.rdFeedB = feed; ui.rdKillB = kill; break;
+				}
 				return ;
 			}
 
 			function setRD()
 			{
-				setRDCells();		
-				if ( params.rdPresetA === 'Negative bubbles')			setRDParamsA( 0.2097, 0.1050, 0.0980, 0.0555 );
-				else if ( params.rdPresetA === 'Positive bubbles' )		setRDParamsA( 0.2097, 0.1050, 0.0980, 0.0570 );
-				else if ( params.rdPresetA === 'Precritical bubbles' )	setRDParamsA( 0.2097, 0.1050, 0.0820, 0.0590 );
-				else if ( params.rdPresetA === 'Worms & loops' )		setRDParamsA( 0.2097, 0.1050, 0.0820, 0.0600 );
-				else if ( params.rdPresetA === 'Stable solutions' )		setRDParamsA( 0.2097, 0.1050, 0.0740, 0.0640 );
-				else if ( params.rdPresetA === 'U-Skate World' )		setRDParamsA( 0.2097, 0.1050, 0.0620, 0.0609 );
-				else if ( params.rdPresetA === 'Worms' )				setRDParamsA( 0.2097, 0.1050, 0.0580, 0.0650 );
-				else if ( params.rdPresetA === 'Worms to maze' )		setRDParamsA( 0.2097, 0.1050, 0.0460, 0.0630 );
-				else if ( params.rdPresetA === 'Negatons' )				setRDParamsA( 0.2097, 0.1050, 0.0460, 0.0594 );
-				else if ( params.rdPresetA === 'Turing patterns' )		setRDParamsA( 0.2097, 0.1050, 0.0420, 0.0590 );
-				else if ( params.rdPresetA === 'Chaos to Turing' )		setRDParamsA( 0.2097, 0.1050, 0.0390, 0.0580 );
-				else if ( params.rdPresetA === 'Fingerprints' )			setRDParamsA( 0.2097, 0.1050, 0.0370, 0.0600 );
-				else if ( params.rdPresetA === 'Chaos & negatons' )		setRDParamsA( 0.2097, 0.1050, 0.0353, 0.0566 );
-				else if ( params.rdPresetA === 'Spots & worms' )		setRDParamsA( 0.2097, 0.1050, 0.0340, 0.0618 );
-				else if ( params.rdPresetA === 'Replicating spots' )	setRDParamsA( 0.2097, 0.1050, 0.0300, 0.0630 );
-				else if ( params.rdPresetA === 'Resonant mazes' )		setRDParamsA( 0.2097, 0.1050, 0.0300, 0.0565 );
-				else if ( params.rdPresetA === 'Mazes' )				setRDParamsA( 0.2097, 0.1050, 0.0290, 0.0570 );
-				else if ( params.rdPresetA === 'Mazes & chaos' )		setRDParamsA( 0.2097, 0.1050, 0.0260, 0.0550 );
-				else if ( params.rdPresetA === 'Chaos' )				setRDParamsA( 0.2097, 0.1050, 0.0260, 0.0510 );
-				if ( params.rdPresetB === 'Negative bubbles')			setRDParamsB( 0.2097, 0.1050, 0.0980, 0.0555 );
-				else if ( params.rdPresetB === 'Positive bubbles' )		setRDParamsB( 0.2097, 0.1050, 0.0980, 0.0570 );
-				else if ( params.rdPresetB === 'Precritical bubbles' )	setRDParamsB( 0.2097, 0.1050, 0.0820, 0.0590 );
-				else if ( params.rdPresetB === 'Worms & loops' )		setRDParamsB( 0.2097, 0.1050, 0.0820, 0.0600 );
-				else if ( params.rdPresetB === 'Stable solutions' )		setRDParamsB( 0.2097, 0.1050, 0.0740, 0.0640 );
-				else if ( params.rdPresetB === 'U-Skate World' )		setRDParamsB( 0.2097, 0.1050, 0.0620, 0.0609 );
-				else if ( params.rdPresetB === 'Worms' )				setRDParamsB( 0.2097, 0.1050, 0.0580, 0.0650 );
-				else if ( params.rdPresetB === 'Worms to maze' )		setRDParamsB( 0.2097, 0.1050, 0.0460, 0.0630 );
-				else if ( params.rdPresetB === 'Negatons' )				setRDParamsB( 0.2097, 0.1050, 0.0460, 0.0594 );
-				else if ( params.rdPresetB === 'Turing patterns' )		setRDParamsB( 0.2097, 0.1050, 0.0420, 0.0590 );
-				else if ( params.rdPresetB === 'Chaos to Turing' )		setRDParamsB( 0.2097, 0.1050, 0.0390, 0.0580 );
-				else if ( params.rdPresetB === 'Fingerprints' )			setRDParamsB( 0.2097, 0.1050, 0.0370, 0.0600 );
-				else if ( params.rdPresetB === 'Chaos & negatons' )		setRDParamsB( 0.2097, 0.1050, 0.0353, 0.0566 );
-				else if ( params.rdPresetB === 'Spots & worms' )		setRDParamsB( 0.2097, 0.1050, 0.0340, 0.0618 );
-				else if ( params.rdPresetB === 'Replicating spots' )	setRDParamsB( 0.2097, 0.1050, 0.0300, 0.0630 );
-				else if ( params.rdPresetB === 'Resonant mazes' )		setRDParamsB( 0.2097, 0.1050, 0.0300, 0.0565 );
-				else if ( params.rdPresetB === 'Mazes' )				setRDParamsB( 0.2097, 0.1050, 0.0290, 0.0570 );
-				else if ( params.rdPresetB === 'Mazes & chaos' )		setRDParamsB( 0.2097, 0.1050, 0.0260, 0.0550 );
-				else if ( params.rdPresetB === 'Chaos' )				setRDParamsB( 0.2097, 0.1050, 0.0260, 0.0510 );
+				setRDParams( ui.rdPresetA, 0 );
+				setRDParams( ui.rdPresetB, 1 );
+				setRDVariables();
+				setRDCells();
+				setRDMesh();
 				updateRDCellsFromCA();
+				setMS();
+				frameCount = 0;
 				return ;
 			}
 
 			function displayCA()
 			{
 				let index;
-				let position;
-				let matrix;
+				let colors, color;
 
 				index = 0;
-				position =		new THREE.Vector3();
-				matrix =		new THREE.Matrix4();
-				for ( let i = 0; i < params.caRows; i++ )
-					for ( let j = 0; j < params.caColumns; j++ )
+				colors = caMesh.geometry.attributes.color.array;
+				for ( let i = 0; i < ui.caRows; i++ )
+					for ( let j = 0; j < ui.caColumns; j++ )
 					{
-						position.x = j * params.caCellSize - caOffset.x;
-						position.y = -i * params.caCellSize + caOffset.y;
-						position.z = 0.;
-						matrix.setPosition( position );
-						caMesh.setMatrixAt( index, matrix );
 						if (caCellsPrev[i][j] != 0 || caCells[i][j] != 0)
-						{
-							if ( caCellsPrev[i][j] == 0 )
-								caMesh.setColorAt( index, caColorBorn );
-							else if ( caCells[i][j] == 0 )
-								caMesh.setColorAt( index, caColorDeath );
-							else
-								caMesh.setColorAt( index, caColorStasis );
-						}
+							caCellsPrev[i][j] == 0 ? color = caColorBorn :
+							caCells[i][j] == 0 ? color = caColorDeath : color = caColorStasis;
 						else
-							caMesh.setColorAt( index, caColorEmpty );
-						index++;
+							color = caColorEmpty;
+
+						colors.set( new Float32Array( [
+												color.r, color.g, color.b,
+												color.r, color.g, color.b,
+												color.r, color.g, color.b,
+												color.r, color.g, color.b,
+												color.r, color.g, color.b,
+												color.r, color.g, color.b
+											] ), index );
+						index += 18;
 					}
-				caMesh.instanceColor.needsUpdate = true;
-				caMesh.instanceColor.needsUpdate = true;
+				caMesh.geometry.attributes.color.needsUpdate = true;
 				return ;
 			}
 
@@ -531,11 +521,11 @@
 				let neighbors;
 				
 				neighbors = 0;
-				x += params.caColumns;
-				y += params.caRows;
+				x += ui.caColumns;
+				y += ui.caRows;
 				for ( let i = -1; i <= 1; i++ )
 					for ( let j = -1; j <= 1; j++ )
-						neighbors += caCellsPrev[( i + y ) % params.caRows][( j + x ) % params.caColumns];
+						neighbors += caCellsPrev[( i + y ) % ui.caRows][( j + x ) % ui.caColumns];
 				return ( neighbors );
 			}
 
@@ -546,8 +536,8 @@
 				caCellsPrev = [];
 				for ( let i = 0; i < caCells.length; i++ )
 					caCellsPrev[i] = caCells[i].slice( 0 );
-				for ( let i = 0; i < params.caRows; i++ )
-					for ( let j = 0, index = 0; j < params.caColumns; j++ )
+				for ( let i = 0; i < ui.caRows; i++ )
+					for ( let j = 0, index = 0; j < ui.caColumns; j++ )
 					{
 						neighbors = getCANeighbors( j, i );
 						if ( caCellsPrev[i][j] == 0 && caRuleBorn[neighbors] == 1 )
@@ -558,43 +548,75 @@
 				return ;
 			}
 
+			function setCAMesh()
+			{
+				let v;
+				let colors;
+				let position, positions;
+				let geometry, material;
+				let index;
+				
+				index =		0;
+				position =	new THREE.Vector3();
+				v =		[4];
+				colors =	new Float32Array( (ui.caRows) * (ui.caColumns) * 6 * 3 );
+				positions =	colors.slice( 0 );
+				for ( let i = 0; i < ui.caRows; i++ )
+					for ( let j = 0; j < ui.caColumns; j++ )
+					{
+						position.x = (j - 0.5) * ui.caCellSize - caOffset.x;
+						position.y = -(i + 0.5) * ui.caCellSize + caOffset.y;
+						position.z = 0.;
+
+						v[0] = position.clone();
+						v[1] = new THREE.Vector3( ui.caCellSize, 0., 0. ).add( position );
+						v[2] = new THREE.Vector3( ui.caCellSize, ui.caCellSize, 0. ).add( position );
+						v[3] = new THREE.Vector3( 0., ui.caCellSize, 0 ).add( position );
+
+						positions.set( new Float32Array( [
+													v[0].x, v[0].y, v[0].z,
+													v[1].x, v[1].y, v[1].z,
+													v[2].x, v[2].y, v[2].z,
+													v[0].x, v[0].y, v[0].z,
+													v[2].x, v[2].y, v[2].z,
+													v[3].x, v[3].y, v[3].z
+												] ), index );		
+						index += 18;
+					}
+				geometry = new THREE.BufferGeometry();
+				geometry.setAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
+				geometry.setAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+				material = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors, side: THREE.DoubleSide} );
+				
+				caMesh = new THREE.Mesh( geometry, material );
+				scene.add( caMesh );
+				return ;
+			}
+
 			function setCACells()
 			{
-				let	halfColumns, halfRows;
-				let geometry, material;
+				let	halfCols, halfRows;
 
-				halfColumns = params.caColumns / 2;
-				halfRows = params.caRows / 2;
-				caCells = new Array( params.caRows );
-				for ( let i = 0; i < params.caRows; i++ )
-					caCells[i] = new Array( params.caColumns ).fill( 0 );
+				halfCols =	ui.caColumns * 0.5;
+				halfRows =	ui.caRows * 0.5;
+				caCells =	new Array( ui.caRows );
+				for ( let i = 0; i < ui.caRows; i++ )
+					caCells[i] = new Array( ui.caColumns ).fill( 0 );
 				caCells[0][0] = 1;
-				caCells[0][params.caColumns - 1] = 1;
-				caCells[params.caRows - 1][0] = 1;
-				caCells[params.caRows - 1][params.caColumns - 1] = 1;
-				caCells[halfRows - 1][halfColumns - 1] = 1;
-				caCells[halfRows - 1][halfColumns] = 1;
-				caCells[halfRows][halfColumns - 1] = 1;
-				caCells[halfRows][halfColumns] = 1;
-				caOffset =		new THREE.Vector2( params.caColumns, params.caRows ).divideScalar( 2.0 );
-				caOffset =		caOffset.addScalar( -0.5 ).multiplyScalar( params.caCellSize );
-				caColorBorn = 	new THREE.Color( params.caColorBorn );
-				caColorStasis =	new THREE.Color( params.caColorStasis );
-				caColorDeath =	new THREE.Color( params.caColorDeath );
-				caColorEmpty =	new THREE.Color( params.caColorEmpty );
-				geometry =		new THREE.PlaneGeometry( params.caCellSize, params.caCellSize, 0, 0);
-				material =		new THREE.MeshBasicMaterial();
-				scene.remove( caMesh );
-				caMesh =		new THREE.InstancedMesh( geometry, material, params.caColumns * params.caRows );
-				caMesh.instanceMatrix.setUsage( THREE.DynamicDrawUsage );
-				scene.add( caMesh );
+				caCells[0][ui.caColumns - 1] = 1;
+				caCells[ui.caRows - 1][0] = 1;
+				caCells[ui.caRows - 1][ui.caColumns - 1] = 1;
+				caCells[halfRows - 1][halfCols - 1] = 1;
+				caCells[halfRows - 1][halfCols] = 1;
+				caCells[halfRows][halfCols - 1] = 1;
+				caCells[halfRows][halfCols] = 1;
 				return ;
 			}
 
 			function setCARuleState( index, rule )
 			{
 				for ( let i = 0; i < 9; i++ )
-					if ( params.caRule.charCodeAt( index ) == '0'.charCodeAt(0) + i )
+					if ( ui.caRule.charCodeAt( index ) == '0'.charCodeAt(0) + i )
 						rule[i] = 1;
 				return ;
 			}
@@ -606,30 +628,43 @@
 				index = 0;
 				for ( let i = 0; i < 9; i++ )
 					caRuleBorn[i] = caRuleStasis[i] = 0;
-				if ( params.caRule.charAt( 0 ) == 'B' )
+				if ( ui.caRule.charAt( 0 ) == 'B' )
 				{
-					while ( ++index < params.caRule.length && params.caRule.charAt( index ) != '/' )
+					while ( ++index < ui.caRule.length && ui.caRule.charAt( index ) != '/' )
 						setCARuleState( index, caRuleBorn );
-					while ( ++index < params.caRule.length )
+					while ( ++index < ui.caRule.length )
 						setCARuleState( index, caRuleStasis );
 				}
 				return ;
 			}
 
-			function updateCA()
+			function setCAVariables()
 			{
-				setCA();
-				setRD();
+				caOffset =		new THREE.Vector2( ui.caColumns, ui.caRows ).divideScalar( 2.0 );
+				caOffset =		caOffset.addScalar( -0.5 ).multiplyScalar( ui.caCellSize );
+				caColorBorn = 	new THREE.Color( ui.caColorBorn );
+				caColorStasis =	new THREE.Color( ui.caColorStasis );
+				caColorDeath =	new THREE.Color( ui.caColorDeath );
+				caColorEmpty =	new THREE.Color( ui.caColorEmpty );
 				return ;
 			}
 
 			function setCA()
 			{
 				setCARule();
+				setCAVariables();
 				setCACells();
-				for ( let i = 0; i < params.caGeneration; i++ )
+				setCAMesh();
+				for ( let i = 0; i < ui.caGeneration; i++ )
 					updateCACells();
 				displayCA();
+				return ;
+			}
+
+			function setRug()
+			{
+				setCA();
+				setRD();
 				return ;
 			}
 
@@ -645,23 +680,24 @@
 
 				gui = new GUI();
 				document.getElementById('gui-container').appendChild(gui.domElement);
+				
 				folderCA = gui.addFolder( 'Cellular automata' );
-				folderCA.add( params, 'caRule').name( 'rule' ).listen().onChange( function () { updateCA() } );
-				folderCA.add( params, 'caColumns', 16, 64, 4 ).name( 'columns' ).listen().onChange( function () { updateCA() } );
-				folderCA.add( params, 'caRows', 16, 64, 4 ).name( 'rows' ).listen().onChange( function () { updateCA() } );
-				folderCA.add( params, 'caCellSize', 4, 40, 1 ).name( 'cellSize' ).listen().onChange( function () { updateCA() } );
-				folderCA.add( params, 'caGeneration', 0, 120, 1 ).name( 'generation' ).listen().onChange( function () { updateCA() } );
-				folderCA.addColor( params, 'caColorBorn' ).name( 'colorBorn' ).listen().onChange( function () { updateCACells() } );
-				folderCA.addColor( params, 'caColorStasis' ).name( 'colorStasis' ).listen().onChange( function () { updateCACells() } );
-				folderCA.addColor( params, 'caColorDeath' ).name( 'colorDeath' ).listen().onChange( function () { updateCACells() } );
+				folderCA.add( ui, 'caRule').name( 'rule' ).listen().onChange( function () { setCA() } );
+				folderCA.add( ui, 'caColumns', 16, 64, 4 ).name( 'columns' ).listen().onChange( function () { setRug() } );
+				folderCA.add( ui, 'caRows', 16, 64, 4 ).name( 'rows' ).listen().onChange( function () { setRug() } );
+				folderCA.add( ui, 'caCellSize', 4, 40, 1 ).name( 'cellSize' ).listen().onChange( function () { setRug() } );
+				folderCA.add( ui, 'caGeneration', 0, 256, 1 ).name( 'generation' ).listen().onChange( function () { setCA() } );
+				folderCA.addColor( ui, 'caColorBorn' ).name( 'colorBorn' ).listen().onChange( function () { setCA() } );
+				folderCA.addColor( ui, 'caColorStasis' ).name( 'colorStasis' ).listen().onChange( function () { setCA() } );
+				folderCA.addColor( ui, 'caColorDeath' ).name( 'colorDeath' ).listen().onChange( function () { setCA() } );
+				
 				folderRD = gui.addFolder( 'Reaction diffusion' );
-				folderRD.add( params, 'rdCellSize', 1, 10, 1 ).name( 'cellSize' ).listen().onChange( function () { updateRD() } );
-				folderRD.add( params, 'rdPresetA', rdStates ).name( 'presetIn' ).onChange( function () { updateRD() } );
-				folderRD.add( params, 'rdPresetB', rdStates ).name( 'presetOut' ).onChange( function () { updateRD() } );
-				folderRD.add( params, 'rdIteration', 0, 240, 1 ).name( 'iteration' ).listen().onChange( function () { updateRD() } );
-				folderMS = gui.addFolder( 'Marching square' );
-				folderMS.add( params, 'msCellSize', 2, 20, 1 ).name( 'cellSize' ).listen().onChange( function () { updateMS() } );
-				folderMS.addColor( params, 'msColor' ).name( 'color' ).listen().onChange( function () { updateMS() } );
+				folderRD.add( ui, 'rdCellSize', 2, 20, 1 ).name( 'cellSize' ).listen().onChange( function () { setRD() } );
+				folderRD.add( ui, 'rdPresetA', rdStates ).name( 'presetIn' ).onChange( function () { setRD() } );
+				folderRD.add( ui, 'rdPresetB', rdStates ).name( 'presetOut' ).onChange( function () { setRD() } );
+				folderRD.add( ui, 'rdIteration', 0, 1024, 1 ).name( 'iteration' ).listen().onChange( function () { setRD() } );
+				folderRD.addColor( ui, 'rdColor' ).name( 'color' ).listen().onChange( function () { setMS() } );
+				
 				svgExport = { add:function(){ exportToSVG(); } };
 				gui.add( svgExport, 'add' ).name( 'Export to SVG' );
 				return ;
@@ -681,9 +717,7 @@
 				stats = new Stats();
 				container.appendChild( stats.dom );
 
-				setCA();
-				setRD();
-				setMS();
+				setRug();
 				createGUI();
 
 				renderer = new THREE.WebGLRenderer( { antialias: true, preserveDrawingBuffer: true } );
@@ -707,13 +741,17 @@
 			function animate()
 			{
 				requestAnimationFrame( animate );
-				updateRDCells();
-				//displayRD();
-				updateMSCellsFromRD();
-				displayMS();
+				if ( frameCount < ui.rdIteration )
+				{
+					updateRDCells();
+				//	displayRD();
+					updateMSCellsFromRD();
+					displayMS();
+				}
 				controls.update();
 				stats.update();
 				renderer.render( scene, camera );
+				frameCount++;
 				return ;
 			}
 
@@ -730,15 +768,16 @@
 
 			function saveToSVG(rendererSVG, filename)
 			{
-				var XMLS = new XMLSerializer(); 
-				var svgfile = XMLS.serializeToString(rendererSVG.domElement); 
-				
-				var svgData = svgfile;
-				var preface = '<?xml version="1.0" standalone="no"?>\r\n';
-				var svgBlob = new Blob([preface, svgData], {type:"image/svg+xml;charset=utf-8"});
-				var svgUrl = URL.createObjectURL(svgBlob);
-				var downloadLink = document.createElement("a");
-				downloadLink.href = svgUrl;
+				var XMLS;
+				var preface, downloadLink;
+				var svgfile, svgBlob;
+
+				XMLS = new XMLSerializer(); 
+				svgfile = XMLS.serializeToString(rendererSVG.domElement); 
+				preface = '<?xml version="1.0" standalone="no"?>\r\n';
+				svgBlob = new Blob([preface, svgfile], {type:"image/svg+xml;charset=utf-8"});
+				downloadLink = document.createElement("a");
+				downloadLink.href = URL.createObjectURL(svgBlob);
 				downloadLink.download = filename;
 				document.body.appendChild(downloadLink);
 				downloadLink.click();
