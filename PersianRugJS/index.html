@@ -26,7 +26,7 @@
 			let camera, controls, scene, stats, renderer;
 			let frameCount = 0;
 
-			let	caCells, caCellsPrev;
+			let caCells, caCellsPrev;
 			let caMesh;
 			let caMeshes = [];
 			let caRuleBorn = [0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -34,16 +34,18 @@
 			let caOffset;
 			let caColorBorn, caColorStasis, caColorDeath, caColorEmpty;
 
-			let	rdCells, rdCellsPrev;
-			let	rdCellSub;
-			let	rdMesh;
+			let rdCells, rdCellsPrev;
+			let rdCellSub;
+			let rdMesh;
 			let rdStates = [ 'Negative bubbles', 'Positive bubbles', 'Precritical bubbles', 'Worms & loops', 'Stable solutions', 'U-Skate World', 'Worms', 'Worms to maze', 'Negatons', 'Turing patterns', 'Chaos to Turing', 'Fingerprints', 'Chaos & negatons', 'Spots & worms', 'Replicating spots', 'Resonant mazes', 'Mazes', 'Mazes & chaos', 'Chaos' ]; 
+			let rdPresetAIndex = 0;
+			let rdPresetBIndex = 0;
 			let rdColumns, rdRows, rdOffset;
 			let rdColor;
 
 			let msCellSize;
-			let	msCells;
-			let	msMesh, msMeshes;
+			let msCells;
+			let msMesh, msMeshes;
 
 			const ui = {
 				caRule: 'B234/S',
@@ -241,7 +243,7 @@
 				scene.remove( msMesh );
 				msMesh = new THREE.Mesh( geometry, material );
 				scene.add( msMesh );
-				return ;	
+				return ;
 			}
 
 			function setMSCells()
@@ -253,7 +255,7 @@
 				msCells = new Array( rdRows );
 				for ( let i = 0; i < rdRows; i++ )
 					msCells[i] = new Array( rdColumns );
-				return ;	
+				return ;
 			}
 
 			function setMS()
@@ -287,7 +289,7 @@
 						index++;
 					}
 				rdMesh.instanceMatrix.needsUpdate = true;
-				rdMesh.instanceColor.needsUpdate = true;	
+				rdMesh.instanceColor.needsUpdate = true;
 				return ;
 			}
 
@@ -335,11 +337,13 @@
 						b = rdCellsPrev[i][j][1];
 
 						abb = a * b * b;
-						feed = THREE.MathUtils.mapLinear( i, 1, rdRows - 2, ui.rdFeedA, ui.rdFeedB );
-						kill = THREE.MathUtils.mapLinear( j, 1, rdColumns - 2, ui.rdKillA, ui.rdKillB );
 						
+						feed = THREE.MathUtils.mapLinear( i, 1, rdRows - 2, ui.rdFeedB, ui.rdFeedA );
+						kill = THREE.MathUtils.mapLinear( j, 1, rdColumns - 2, ui.rdKillA, ui.rdKillB );
+
 						rdCells[i][j][0] = a + ui.rdDiffusionA * laplaceA( i, j ) - abb + feed * ( 1. - a );
 						rdCells[i][j][1] = b + ui.rdDiffusionB * laplaceB( i, j ) + abb - ( kill + feed ) * b;
+						
 						rdCells[i][j][0] = THREE.MathUtils.clamp( rdCells[i][j][0], 0., 1. );
 						rdCells[i][j][1] = THREE.MathUtils.clamp( rdCells[i][j][1], 0., 1. );
 					}
@@ -350,7 +354,7 @@
 					for ( let j = 0; j < rdCells[i].length; j++ )
 						rdCellsPrev[i][j] = rdCells[i][j].slice( 0 );
 				}
-				return ;				
+				return ;
 			}
 
 			function updateRDCellsFromCA()
@@ -365,11 +369,11 @@
 					for ( let j = 1, k = 0, l = 0; j < rdColumns - 1; j++ )
 					{
 						k = Math.floor( (i - 1) / rdCellSub );
-						l = Math.floor( (j - 1) / rdCellSub );				
+						l = Math.floor( (j - 1) / rdCellSub );
 						positionCA.x = l * ui.caCellSize - caOffset.x;
 						positionCA.y = -k * ui.caCellSize + caOffset.y;
 						positionRD.x = j * ui.rdCellSize - rdOffset.x;
-						positionRD.y = -i * ui.rdCellSize + rdOffset.y;	
+						positionRD.y = -i * ui.rdCellSize + rdOffset.y;
 						if ( caCells[k][l] > 0 && positionRD.distanceToSquared(positionCA) < distance )
 							rdCellsPrev[i][j] = [1.0, 1.0];
 					}
@@ -415,7 +419,7 @@
 				rdOffset =	new THREE.Vector2( rdColumns, rdRows ).divideScalar( 2. );
 				rdOffset =	rdOffset.addScalar( -0.5 ).multiplyScalar( ui.rdCellSize );
 				rdColor =	new THREE.Color( ui.rdColor );
-				return ;	
+				return ;
 			}
 
 			function setRDParams( preset, indice )
@@ -580,14 +584,14 @@
 													v[0].x, v[0].y, v[0].z,
 													v[2].x, v[2].y, v[2].z,
 													v[3].x, v[3].y, v[3].z
-												] ), index );		
+												] ), index );
 						index += 18;
 					}
 				geometry = new THREE.BufferGeometry();
 				geometry.setAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
 				geometry.setAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
 				material = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors, side: THREE.DoubleSide} );
-				
+				scene.remove( caMesh );
 				caMesh = new THREE.Mesh( geometry, material );
 				scene.add( caMesh );
 				return ;
@@ -682,20 +686,20 @@
 				document.getElementById('gui-container').appendChild(gui.domElement);
 				
 				folderCA = gui.addFolder( 'Cellular automata' );
-				folderCA.add( ui, 'caRule').name( 'rule' ).listen().onChange( function () { setCA() } );
+				folderCA.add( ui, 'caRule').name( 'rule' ).listen().onChange( function () { setRug() } );
 				folderCA.add( ui, 'caColumns', 16, 64, 4 ).name( 'columns' ).listen().onChange( function () { setRug() } );
 				folderCA.add( ui, 'caRows', 16, 64, 4 ).name( 'rows' ).listen().onChange( function () { setRug() } );
 				folderCA.add( ui, 'caCellSize', 4, 40, 1 ).name( 'cellSize' ).listen().onChange( function () { setRug() } );
-				folderCA.add( ui, 'caGeneration', 0, 256, 1 ).name( 'generation' ).listen().onChange( function () { setCA() } );
+				folderCA.add( ui, 'caGeneration', 0, 256, 1 ).name( 'generation' ).listen().onChange( function () { setRug() } );
 				folderCA.addColor( ui, 'caColorBorn' ).name( 'colorBorn' ).listen().onChange( function () { setCA() } );
 				folderCA.addColor( ui, 'caColorStasis' ).name( 'colorStasis' ).listen().onChange( function () { setCA() } );
 				folderCA.addColor( ui, 'caColorDeath' ).name( 'colorDeath' ).listen().onChange( function () { setCA() } );
-				
+
 				folderRD = gui.addFolder( 'Reaction diffusion' );
 				folderRD.add( ui, 'rdCellSize', 2, 20, 1 ).name( 'cellSize' ).listen().onChange( function () { setRD() } );
-				folderRD.add( ui, 'rdPresetA', rdStates ).name( 'presetIn' ).onChange( function () { setRD() } );
-				folderRD.add( ui, 'rdPresetB', rdStates ).name( 'presetOut' ).onChange( function () { setRD() } );
-				folderRD.add( ui, 'rdIteration', 0, 1024, 1 ).name( 'iteration' ).listen().onChange( function () { setRD() } );
+				folderRD.add( ui, 'rdPresetA', rdStates ).name( 'presetTopLeft' ).onChange( function () { setRD() } ).listen();
+				folderRD.add( ui, 'rdPresetB', rdStates ).name( 'presetBotRight' ).onChange( function () { setRD() } ).listen();
+				folderRD.add( ui, 'rdIteration', 0, 1024, 1 ).name( 'iterationMax' ).listen().onChange( function () { setRD() } );
 				folderRD.addColor( ui, 'rdColor' ).name( 'color' ).listen().onChange( function () { setMS() } );
 				
 				svgExport = { add:function(){ exportToSVG(); } };
@@ -707,7 +711,7 @@
 			{
 				container = document.getElementById( 'container' );
 
-				camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 1, 2000 );
+				camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 1, 8000 );
 				camera.position.z = 1200;
 				controls = new OrbitControls( camera, container );
 
@@ -738,6 +742,34 @@
 				return ;
 			}
 
+			function exploreRDStates()
+			{
+				if ( rdPresetAIndex == 0 && rdPresetBIndex == 0 && frameCount == 0 )
+				{
+					ui.rdPresetA = rdStates[rdPresetAIndex];
+					ui.rdPresetB = rdStates[rdPresetBIndex];
+					setRug();
+				}
+				if ( rdPresetAIndex < rdStates.length )
+					if ( rdPresetBIndex < rdStates.length )
+						if ( frameCount > ui.rdIteration )
+						{
+							exportToSVG();
+							if (rdPresetBIndex == rdStates.length - 1)
+							{
+								rdPresetAIndex++;
+								rdPresetBIndex = 0;
+							}
+							else
+								rdPresetBIndex++;
+							ui.rdPresetA = rdStates[rdPresetAIndex];
+							ui.rdPresetB = rdStates[rdPresetBIndex];
+							frameCount = 0;
+							setRug();
+						}
+				return ;
+			}
+
 			function animate()
 			{
 				requestAnimationFrame( animate );
@@ -748,6 +780,7 @@
 					updateMSCellsFromRD();
 					displayMS();
 				}
+				exploreRDStates();
 				controls.update();
 				stats.update();
 				renderer.render( scene, camera );
