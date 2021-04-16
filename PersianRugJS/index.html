@@ -32,7 +32,7 @@
 			let caRuleBorn = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 			let caRuleStasis = [0, 0, 0, 0, 0, 0, 0, 0, 0];
 			let caOffset;
-			let caColorBorn, caColorStasis, caColorDeath, caColorEmpty;
+			let caColorBorn, caColorStasis, caColorDeath, caColorBack;
 
 			let rdCells, rdCellsPrev;
 			let rdCellSub;
@@ -53,13 +53,13 @@
 				caRows: 24,
 				caCellSize: 30,
 				caGeneration: 20,
-				caColorBorn: '#bb9f48',
-				caColorStasis: '#2e2946',
-				caColorDeath: '#cb95ae',
-				caColorEmpty: '#ccbdc8',
-				rdCellSize: 10,
-				rdPresetA: 'U-Skate World',
-				rdPresetB: 'Turing patterns',
+				caColorBorn: '#e5df88',
+				caColorStasis: '#658ec6',
+				caColorDeath: '#a37eba',
+				caColorBack: '#e8e8e8',
+				rdCellSize: 7.5,
+				rdPresetA: 'Fingerprints',
+				rdPresetB: 'Stable solutions',
 				rdDiffusionA: 0.2097,
 				rdDiffusionB: 0.1050,
 				rdFeedA: 0.,
@@ -67,7 +67,7 @@
 				rdKillA: 0.,
 				rdKillB: 0.,
 				rdIteration: 1024,
-				rdColor: '#2e2946',
+				rdColor: '#4c4c4c',
 			}
 
 			init();
@@ -154,7 +154,7 @@
 				let h;
 
 				index =	0;
-				h =		0.125;
+				h =		0.2;
 				cells =	[4];
 				v =		[8];
 				position = new THREE.Vector3();
@@ -504,7 +504,7 @@
 							caCellsPrev[i][j] == 0 ? color = caColorBorn :
 							caCells[i][j] == 0 ? color = caColorDeath : color = caColorStasis;
 						else
-							color = caColorEmpty;
+							color = caColorBack;
 
 						colors.set( new Float32Array( [
 												color.r, color.g, color.b,
@@ -649,7 +649,7 @@
 				caColorBorn = 	new THREE.Color( ui.caColorBorn );
 				caColorStasis =	new THREE.Color( ui.caColorStasis );
 				caColorDeath =	new THREE.Color( ui.caColorDeath );
-				caColorEmpty =	new THREE.Color( ui.caColorEmpty );
+				caColorBack =	new THREE.Color( ui.caColorBack );
 				return ;
 			}
 
@@ -683,7 +683,7 @@
 				let svgExport;
 
 				gui = new GUI();
-				document.getElementById('gui-container').appendChild(gui.domElement);
+				document.getElementById( 'gui-container' ).appendChild( gui.domElement );
 				
 				folderCA = gui.addFolder( 'Cellular automata' );
 				folderCA.add( ui, 'caRule').name( 'rule' ).listen().onChange( function () { setRug() } );
@@ -694,12 +694,13 @@
 				folderCA.addColor( ui, 'caColorBorn' ).name( 'colorBorn' ).listen().onChange( function () { setCA() } );
 				folderCA.addColor( ui, 'caColorStasis' ).name( 'colorStasis' ).listen().onChange( function () { setCA() } );
 				folderCA.addColor( ui, 'caColorDeath' ).name( 'colorDeath' ).listen().onChange( function () { setCA() } );
+				folderCA.addColor( ui, 'caColorBack' ).name( 'colorBack' ).listen().onChange( function () { setCA() } );
 
 				folderRD = gui.addFolder( 'Reaction diffusion' );
-				folderRD.add( ui, 'rdCellSize', 2, 20, 1 ).name( 'cellSize' ).listen().onChange( function () { setRD() } );
+				folderRD.add( ui, 'rdCellSize', 2, 20, 0.5 ).name( 'cellSize' ).listen().onChange( function () { setRD() } );
 				folderRD.add( ui, 'rdPresetA', rdStates ).name( 'presetTopLeft' ).onChange( function () { setRD() } ).listen();
 				folderRD.add( ui, 'rdPresetB', rdStates ).name( 'presetBotRight' ).onChange( function () { setRD() } ).listen();
-				folderRD.add( ui, 'rdIteration', 0, 1024, 1 ).name( 'iterationMax' ).listen().onChange( function () { setRD() } );
+				folderRD.add( ui, 'rdIteration', 0, 2048, 1 ).name( 'iterationMax' ).listen().onChange( function () { setRD() } );
 				folderRD.addColor( ui, 'rdColor' ).name( 'color' ).listen().onChange( function () { setMS() } );
 				
 				svgExport = { add:function(){ exportToSVG(); } };
@@ -719,7 +720,7 @@
 				scene.background = new THREE.Color( 0xf8f8ff );
 
 				stats = new Stats();
-				container.appendChild( stats.dom );
+				document.getElementById( 'gui-container' ).appendChild( stats.dom );
 
 				setRug();
 				createGUI();
@@ -758,7 +759,7 @@
 							if (rdPresetBIndex == rdStates.length - 1)
 							{
 								rdPresetAIndex++;
-								rdPresetBIndex = 0;
+								rdPresetBIndex = 10;
 							}
 							else
 								rdPresetBIndex++;
@@ -780,9 +781,9 @@
 					updateMSCellsFromRD();
 					displayMS();
 				}
-				exploreRDStates();
+				// exploreRDStates();
 				controls.update();
-				stats.update();
+				// stats.update();
 				renderer.render( scene, camera );
 				frameCount++;
 				return ;
@@ -795,7 +796,14 @@
 				rendererSVG = new SVGRenderer();
 				rendererSVG.setSize( window.innerWidth, window.innerHeight );
 				rendererSVG.render( scene, camera );
-				saveToSVG(rendererSVG, "rug.svg");
+				if ( rdPresetAIndex < 10 && rdPresetBIndex < 10 )
+					saveToSVG(rendererSVG, 'RUG_0' + rdPresetAIndex + '_0' + rdPresetBIndex + '.svg');
+				else if ( rdPresetAIndex < 10 )
+					saveToSVG(rendererSVG, 'RUG_0' + rdPresetAIndex + '_' + rdPresetBIndex + '.svg');
+				else if ( rdPresetBIndex < 10 )
+					saveToSVG(rendererSVG, 'RUG_' + rdPresetAIndex + '_0' + rdPresetBIndex + '.svg');
+				else
+					saveToSVG(rendererSVG, 'RUG_' + rdPresetAIndex + '_' + rdPresetBIndex + '.svg');
 				return ;
 			}
 
