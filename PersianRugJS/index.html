@@ -833,9 +833,6 @@
 			window.addEventListener('sempliceTransitionInDone', function (e) {
 				init();
 				animate();
-				camera.aspect = container.clientWidth / container.clientHeight;
-				camera.updateProjectionMatrix();
-				renderer.setSize( container.clientWidth, container.clientHeight );
 				return ;
 			}, false);
 		</script>
