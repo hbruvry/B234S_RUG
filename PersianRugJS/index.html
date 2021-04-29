@@ -14,16 +14,14 @@
 		<div id="gui-container" style="position: absolute; top: 0px; left: 0px; z-index: 10;"></div>
 
 		<script async type="module">
-			import * as THREE from 'https://unpkg.com/three@0.121.1/build/three.module.js';
-			import { OrbitControls } from 'https://unpkg.com/three@0.121.1/examples/jsm/controls/OrbitControls.js';
-			import Stats from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/stats.module.js';
-			import { GUI } from 'https://unpkg.com/three@0.121.1/examples/jsm/libs/dat.gui.module.js';
-			import { MathUtils } from 'https://unpkg.com/three@0.121.1/build/three.module.js';
-			import { SVGRenderer } from 'https://unpkg.com/three@0.121.1/examples/jsm/renderers/SVGRenderer.js';
-			import { BufferGeometryUtils } from 'https://unpkg.com/three@0.121.1/examples/jsm/utils/BufferGeometryUtils.js';
+			import * as THREE from 'https://cdn.skypack.dev/three@0.121.1/build/three.module.js';
+			import { OrbitControls } from 'https://cdn.skypack.dev/three@0.121.1/examples/jsm/controls/OrbitControls.js';
+			import { GUI } from 'https://cdn.skypack.dev/three@0.121.1/examples/jsm/libs/dat.gui.module.js';
+			import { MathUtils } from 'https://cdn.skypack.dev/three@0.121.1/build/three.module.js';
+			import { SVGRenderer } from 'https://cdn.skypack.dev/three@0.121.1/examples/jsm/renderers/SVGRenderer.js';
 
 			let container;
-			let camera, controls, scene, stats, renderer;
+			let camera, controls, scene, renderer;
 			let frameCount = 0;
 
 			let caCells, caCellsPrev;
@@ -169,7 +167,7 @@
 
 						position.x = j * msCellSize - rdOffset.x;
 						position.y = i * msCellSize - rdOffset.y;
-						position.z = 1.;
+						position.z = 0.1;
 
 						v[0] = new THREE.Vector3( msCellSize * cells[0] / ( cells[0] - cells[1] ), 0., 0. ).add( position );
 						v[1] = new THREE.Vector3( msCellSize, msCellSize * cells[1] / ( cells[1] - cells[2] ), 0. ).add( position );
@@ -239,7 +237,7 @@
 				positions =	new Float32Array( (rdRows - 1) * (rdColumns - 1) * 9 * 3 );
 				geometry =	new THREE.BufferGeometry();
 				geometry.setAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-				material = new THREE.MeshBasicMaterial( { color: rdColor } );
+				material = new THREE.MeshBasicMaterial( { color: rdColor, side: THREE.DoubleSide } );
 				scene.remove( msMesh );
 				msMesh = new THREE.Mesh( geometry, material );
 				scene.add( msMesh );
@@ -266,6 +264,7 @@
 				return ;
 			}
 
+			/*
 			function displayRD()
 			{
 				let index;
@@ -292,6 +291,7 @@
 				rdMesh.instanceColor.needsUpdate = true;
 				return ;
 			}
+			*/
 
 			function laplaceA( i, j )
 			{
@@ -380,6 +380,7 @@
 				return ;
 			}
 
+			/*
 			function setRDMesh()
 			{
 				let geometry, material;
@@ -391,7 +392,8 @@
 				rdMesh.instanceMatrix.setUsage( THREE.DynamicDrawUsage );
 				scene.add( rdMesh );
 				return ;
-			}	
+			}
+			*/
 
 			function setRDCells()
 			{
@@ -483,7 +485,7 @@
 				setRDParams( ui.rdPresetB, 1 );
 				setRDVariables();
 				setRDCells();
-				setRDMesh();
+				// setRDMesh();
 				updateRDCellsFromCA();
 				setMS();
 				frameCount = 0;
@@ -590,7 +592,7 @@
 				geometry = new THREE.BufferGeometry();
 				geometry.setAttribute( 'color', new THREE.BufferAttribute( colors, 3 ) );
 				geometry.setAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
-				material = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors, side: THREE.DoubleSide} );
+				material = new THREE.MeshBasicMaterial( { vertexColors: THREE.VertexColors, side: THREE.DoubleSide } );
 				scene.remove( caMesh );
 				caMesh = new THREE.Mesh( geometry, material );
 				scene.add( caMesh );
@@ -712,15 +714,13 @@
 			{
 				container = document.getElementById( 'container' );
 
-				camera = new THREE.PerspectiveCamera( 45, container.clientWidth / container.clientHeight, 1, 8000 );
-				camera.position.z = 1200;
+				camera = new THREE.OrthographicCamera( -container.clientWidth / 2.0, container.clientWidth / 2.0, container.clientHeight / 2.0, -container.clientHeight / 2.0, -800, 8000 );
+				camera.zoom = 0.5;
+				camera.updateProjectionMatrix();
 				controls = new OrbitControls( camera, container );
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0xf8f8ff );
-
-				stats = new Stats();
-				document.getElementById( 'gui-container' ).appendChild( stats.dom );
 
 				setRug();
 				createGUI();
@@ -737,12 +737,16 @@
 
 			function onWindowResize()
 			{
-				camera.aspect = container.clientWidth / container.clientHeight;
+				camera.left = -container.clientWidth / 2.0;
+				camera.right = container.clientWidth / 2.0;
+				camera.top = container.clientHeight / 2.0;
+				camera.bottom = -container.clientHeight / 2.0;
 				camera.updateProjectionMatrix();
 				renderer.setSize( container.clientWidth, container.clientHeight );
 				return ;
 			}
 
+			/*
 			function exploreRDStates()
 			{
 				if ( rdPresetAIndex == 0 && rdPresetBIndex == 0 && frameCount == 0 )
@@ -770,6 +774,7 @@
 						}
 				return ;
 			}
+			*/
 
 			function animate()
 			{
@@ -783,7 +788,6 @@
 				}
 				// exploreRDStates();
 				controls.update();
-				// stats.update();
 				renderer.render( scene, camera );
 				frameCount++;
 				return ;
