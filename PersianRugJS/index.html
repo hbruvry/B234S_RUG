@@ -692,7 +692,7 @@
 				folderCA.add( ui, 'caColumns', 16, 64, 4 ).name( 'columns' ).listen().onChange( function () { setRug() } );
 				folderCA.add( ui, 'caRows', 16, 64, 4 ).name( 'rows' ).listen().onChange( function () { setRug() } );
 				folderCA.add( ui, 'caCellSize', 4, 40, 1 ).name( 'cellSize' ).listen().onChange( function () { setRug() } );
-				folderCA.add( ui, 'caGeneration', 0, 256, 1 ).name( 'generation' ).listen().onChange( function () { setRug() } );
+				folderCA.add( ui, 'caGeneration', 0, 32, 1 ).name( 'generation' ).listen().onChange( function () { setRug() } );
 				folderCA.addColor( ui, 'caColorBorn' ).name( 'colorBorn' ).listen().onChange( function () { setCA() } );
 				folderCA.addColor( ui, 'caColorStasis' ).name( 'colorStasis' ).listen().onChange( function () { setCA() } );
 				folderCA.addColor( ui, 'caColorDeath' ).name( 'colorDeath' ).listen().onChange( function () { setCA() } );
