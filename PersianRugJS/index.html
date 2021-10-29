@@ -15,8 +15,8 @@
 
 		<script async type="module">
 			import * as THREE from 'https://cdn.skypack.dev/three@0.121.1/build/three.module.js';
-			import { OrbitControls } from 'https://cdn.skypack.dev/three@0.121.1/examples/jsm/controls/OrbitControls.js';
 			import { GUI } from 'https://cdn.skypack.dev/three@0.121.1/examples/jsm/libs/dat.gui.module.js';
+			import { OrbitControls } from 'https://cdn.skypack.dev/three@0.121.1/examples/jsm/controls/OrbitControls.js';
 			import { MathUtils } from 'https://cdn.skypack.dev/three@0.121.1/build/three.module.js';
 			import { SVGRenderer } from 'https://cdn.skypack.dev/three@0.121.1/examples/jsm/renderers/SVGRenderer.js';
 
@@ -57,7 +57,7 @@
 				caColorBack: '#f8f8ff',
 				rdCellSize: 7.5,
 				rdPresetA: 'Fingerprints',
-				rdPresetB: 'Stable solutions',
+				rdPresetB: 'Worms',
 				rdDiffusionA: 0.2097,
 				rdDiffusionB: 0.1050,
 				rdFeedA: 0.,
@@ -691,15 +691,15 @@
 				folderCA.add( ui, 'caRule').name( 'rule' ).listen().onChange( function () { setRug() } );
 				folderCA.add( ui, 'caColumns', 16, 64, 4 ).name( 'columns' ).listen().onChange( function () { setRug() } );
 				folderCA.add( ui, 'caRows', 16, 64, 4 ).name( 'rows' ).listen().onChange( function () { setRug() } );
-				folderCA.add( ui, 'caCellSize', 4, 40, 1 ).name( 'cellSize' ).listen().onChange( function () { setRug() } );
-				folderCA.add( ui, 'caGeneration', 0, 32, 1 ).name( 'generation' ).listen().onChange( function () { setRug() } );
+				folderCA.add( ui, 'caCellSize', 8, 40, 1 ).name( 'cellSize' ).listen().onChange( function () { setRug() } );
+				folderCA.add( ui, 'caGeneration', 0, 256, 1 ).name( 'generation' ).listen().onChange( function () { setRug() } );
 				folderCA.addColor( ui, 'caColorBorn' ).name( 'colorBorn' ).listen().onChange( function () { setCA() } );
 				folderCA.addColor( ui, 'caColorStasis' ).name( 'colorStasis' ).listen().onChange( function () { setCA() } );
 				folderCA.addColor( ui, 'caColorDeath' ).name( 'colorDeath' ).listen().onChange( function () { setCA() } );
 				folderCA.addColor( ui, 'caColorBack' ).name( 'colorBack' ).listen().onChange( function () { setCA() } );
 
 				folderRD = gui.addFolder( 'Reaction diffusion' );
-				folderRD.add( ui, 'rdCellSize', 2, 20, 0.5 ).name( 'cellSize' ).listen().onChange( function () { setRD() } );
+				folderRD.add( ui, 'rdCellSize', 4, 20, 0.5 ).name( 'cellSize' ).listen().onChange( function () { setRD() } );
 				folderRD.add( ui, 'rdPresetA', rdStates ).name( 'presetTopLeft' ).onChange( function () { setRD() } ).listen();
 				folderRD.add( ui, 'rdPresetB', rdStates ).name( 'presetBotRight' ).onChange( function () { setRD() } ).listen();
 				folderRD.add( ui, 'rdIteration', 0, 2048, 1 ).name( 'iterationMax' ).listen().onChange( function () { setRD() } );
@@ -715,7 +715,7 @@
 				container = document.getElementById( 'container' );
 
 				camera = new THREE.OrthographicCamera( -container.clientWidth / 2.0, container.clientWidth / 2.0, container.clientHeight / 2.0, -container.clientHeight / 2.0, -800, 8000 );
-				camera.zoom = 0.5;
+				camera.zoom = 0.56;
 				camera.updateProjectionMatrix();
 				controls = new OrbitControls( camera, container );
 
